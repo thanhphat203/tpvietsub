@@ -7,7 +7,16 @@
     "poster": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1600&auto=format&fit=crop&q=80",
     "description": "Võ đạo đỉnh phong, là sự cô độc, là sự cô quạnh, là sự cô đơn tột cùng. Dương Khai từ một đệ tử quét rác tại Lăng Tiêu Cát, vô tình có được Hắc Thư bí ẩn, từng bước vượt qua khảo nghiệm sinh tử, xé rách hư không để khẳng định vị thế bá chủ trùng thiên.",
-    "genres": ["Tu Tiên", "Võ Hiệp", "Trọng Sinh", "Hệ Thống", "Vả Mặt", "Nam Chính", "Nghịch Tập", "Phim 3D"],
+    "genres": [
+      "Tu Tiên",
+      "Võ Hiệp",
+      "Trọng Sinh",
+      "Hệ Thống",
+      "Vả Mặt",
+      "Nam Chính",
+      "Nghịch Tập",
+      "Phim 3D"
+    ],
     "country": "Trung Quốc",
     "year": 2024,
     "status": "Đang cập nhật",
@@ -18,9 +27,21 @@
     "isHot": true,
     "isNew": true,
     "watchLinks": [
-      { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Vo+Luyen+Dinh+Phong", "quality": "Full HD 1080p Vietsub" },
-      { "platform": "Bilibili", "url": "https://www.bilibili.tv", "quality": "4K Vietsub Bản Quyền" },
-      { "platform": "iQiyi", "url": "https://www.iq.com", "quality": "Full HD Thuyết Minh" }
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com/results?search_query=Vo+Luyen+Dinh+Phong",
+        "quality": "Full HD 1080p Vietsub"
+      },
+      {
+        "platform": "Bilibili",
+        "url": "https://www.bilibili.tv",
+        "quality": "4K Vietsub Bản Quyền"
+      },
+      {
+        "platform": "iQiyi",
+        "url": "https://www.iq.com",
+        "quality": "Full HD Thuyết Minh"
+      }
     ]
   },
   {
@@ -31,7 +52,15 @@
     "poster": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1600&auto=format&fit=crop&q=80",
     "description": "Tiêu Viêm - thiên tài Đấu Khí trăm năm có một của Tiêu Gia đột nhiên mất đi toàn bộ công lực. Bị tộc nhân khinh dại, vị hôn thê Nạp Lan Yên Nhiên đến hủy hôn ước. Nhờ sự thức tỉnh của Dược Lão trong chiếc nhẫn gia truyền, Tiêu Viêm bắt đầu hành trình thu thập Dị Hỏa, vung tay vả mặt thiên hạ.",
-    "genres": ["Tu Tiên", "Võ Hiệp", "Vả Mặt", "Nam Chính", "Nghịch Tập", "Fantasy", "Phim 3D"],
+    "genres": [
+      "Tu Tiên",
+      "Võ Hiệp",
+      "Vả Mặt",
+      "Nam Chính",
+      "Nghịch Tập",
+      "Fantasy",
+      "Phim 3D"
+    ],
     "country": "Trung Quốc",
     "year": 2024,
     "status": "Đang cập nhật",
@@ -42,9 +71,21 @@
     "isHot": true,
     "isNew": true,
     "watchLinks": [
-      { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "4K HDR Vietsub" },
-      { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung", "quality": "Full HD Thuyết Minh" },
-      { "platform": "Bilibili", "url": "https://www.bilibili.tv", "quality": "Full HD Vietsub" }
+      {
+        "platform": "Tencent Video",
+        "url": "https://v.qq.com",
+        "quality": "4K HDR Vietsub"
+      },
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung",
+        "quality": "Full HD Thuyết Minh"
+      },
+      {
+        "platform": "Bilibili",
+        "url": "https://www.bilibili.tv",
+        "quality": "Full HD Vietsub"
+      }
     ],
     "parts": [
       {
@@ -52,8 +93,16 @@
         "partName": "Phần 1",
         "episodeInfo": "Full 12 Tập",
         "watchLinks": [
-          { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung+Phan+1", "quality": "Full HD Vietsub" },
-          { "platform": "Bilibili", "url": "https://www.bilibili.tv", "quality": "HD Thuyết Minh" }
+          {
+            "platform": "YouTube",
+            "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung+Phan+1",
+            "quality": "Full HD Vietsub"
+          },
+          {
+            "platform": "Bilibili",
+            "url": "https://www.bilibili.tv",
+            "quality": "HD Thuyết Minh"
+          }
         ]
       },
       {
@@ -61,8 +110,16 @@
         "partName": "Phần 2",
         "episodeInfo": "Full 12 Tập",
         "watchLinks": [
-          { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung+Phan+2", "quality": "Full HD Vietsub" },
-          { "platform": "iQiyi", "url": "https://www.iq.com", "quality": "1080p Vietsub" }
+          {
+            "platform": "YouTube",
+            "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung+Phan+2",
+            "quality": "Full HD Vietsub"
+          },
+          {
+            "platform": "iQiyi",
+            "url": "https://www.iq.com",
+            "quality": "1080p Vietsub"
+          }
         ]
       },
       {
@@ -70,8 +127,16 @@
         "partName": "Phần 3",
         "episodeInfo": "Full 12 Tập",
         "watchLinks": [
-          { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "4K Ultra HD" },
-          { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung+Phan+3", "quality": "Full HD Thuyết Minh" }
+          {
+            "platform": "Tencent Video",
+            "url": "https://v.qq.com",
+            "quality": "4K Ultra HD"
+          },
+          {
+            "platform": "YouTube",
+            "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung+Phan+3",
+            "quality": "Full HD Thuyết Minh"
+          }
         ]
       },
       {
@@ -79,8 +144,16 @@
         "partName": "Phần 4",
         "episodeInfo": "Full 24 Tập",
         "watchLinks": [
-          { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "4K Vietsub Bản Quyền" },
-          { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung+Phan+4", "quality": "Full HD Vietsub" }
+          {
+            "platform": "Tencent Video",
+            "url": "https://v.qq.com",
+            "quality": "4K Vietsub Bản Quyền"
+          },
+          {
+            "platform": "YouTube",
+            "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung+Phan+4",
+            "quality": "Full HD Vietsub"
+          }
         ]
       },
       {
@@ -88,8 +161,16 @@
         "partName": "Phần 5 (Niên Phạn Mới Nhất)",
         "episodeInfo": "Đang Cập Nhật - Tập 108",
         "watchLinks": [
-          { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "4K HDR Độc Quyền" },
-          { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung+Phan+5", "quality": "Full HD Thuyết Minh Chuẩn" }
+          {
+            "platform": "Tencent Video",
+            "url": "https://v.qq.com",
+            "quality": "4K HDR Độc Quyền"
+          },
+          {
+            "platform": "YouTube",
+            "url": "https://www.youtube.com/results?search_query=Dau+Pha+Thuong+Khung+Phan+5",
+            "quality": "Full HD Thuyết Minh Chuẩn"
+          }
         ]
       }
     ]
@@ -102,7 +183,15 @@
     "poster": "https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1600&auto=format&fit=crop&q=80",
     "description": "Thạch Hạo sinh ra đã có Chí Tôn Cốt nhưng bị người nhà cướp mất từ nhỏ, sinh ra trong sinh tử cận kề tại Thạch Thôn. Được Liễu Thần che chở và dạy dỗ, tiểu bất điểm rèn luyện thể chất dời núi lấp biển, từng bước đại náo Cửu Thiên Thập Địa.",
-    "genres": ["Tu Tiên", "Hệ Thống", "Nam Chính", "Nghịch Tập", "Fantasy", "Siêu Thực", "Phim 3D"],
+    "genres": [
+      "Tu Tiên",
+      "Hệ Thống",
+      "Nam Chính",
+      "Nghịch Tập",
+      "Fantasy",
+      "Siêu Thực",
+      "Phim 3D"
+    ],
     "country": "Trung Quốc",
     "year": 2024,
     "status": "Đang cập nhật",
@@ -113,8 +202,16 @@
     "isHot": true,
     "isNew": false,
     "watchLinks": [
-      { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "4K Ultra HD" },
-      { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=The+Gioi+Hoan+My", "quality": "Full HD Vietsub" }
+      {
+        "platform": "Tencent Video",
+        "url": "https://v.qq.com",
+        "quality": "4K Ultra HD"
+      },
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com/results?search_query=The+Gioi+Hoan+My",
+        "quality": "Full HD Vietsub"
+      }
     ],
     "parts": [
       {
@@ -122,8 +219,16 @@
         "partName": "Phần 1 (Thạch Thôn)",
         "episodeInfo": "Full 52 Tập",
         "watchLinks": [
-          { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "4K Vietsub" },
-          { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=The+Gioi+Hoan+My+Phan+1", "quality": "Full HD" }
+          {
+            "platform": "Tencent Video",
+            "url": "https://v.qq.com",
+            "quality": "4K Vietsub"
+          },
+          {
+            "platform": "YouTube",
+            "url": "https://www.youtube.com/results?search_query=The+Gioi+Hoan+My+Phan+1",
+            "quality": "Full HD"
+          }
         ]
       },
       {
@@ -131,8 +236,16 @@
         "partName": "Phần 2 (Hạ Giới Đại Chiến)",
         "episodeInfo": "Full 52 Tập",
         "watchLinks": [
-          { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "4K Ultra HD" },
-          { "platform": "Bilibili", "url": "https://www.bilibili.tv", "quality": "1080p Vietsub" }
+          {
+            "platform": "Tencent Video",
+            "url": "https://v.qq.com",
+            "quality": "4K Ultra HD"
+          },
+          {
+            "platform": "Bilibili",
+            "url": "https://www.bilibili.tv",
+            "quality": "1080p Vietsub"
+          }
         ]
       },
       {
@@ -140,7 +253,11 @@
         "partName": "Phần 3 (Thượng Giới Đế Lộ)",
         "episodeInfo": "Full 52 Tập",
         "watchLinks": [
-          { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "4K HDR" }
+          {
+            "platform": "Tencent Video",
+            "url": "https://v.qq.com",
+            "quality": "4K HDR"
+          }
         ]
       },
       {
@@ -148,8 +265,16 @@
         "partName": "Phần 4 (Cửu Thiên Thập Địa)",
         "episodeInfo": "Tập 157 - 172 (Đang Chiếu)",
         "watchLinks": [
-          { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "4K Độc Quyền Vietsub" },
-          { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=The+Gioi+Hoan+My+Phan+4", "quality": "Full HD Thuyết Minh" }
+          {
+            "platform": "Tencent Video",
+            "url": "https://v.qq.com",
+            "quality": "4K Độc Quyền Vietsub"
+          },
+          {
+            "platform": "YouTube",
+            "url": "https://www.youtube.com/results?search_query=The+Gioi+Hoan+My+Phan+4",
+            "quality": "Full HD Thuyết Minh"
+          }
         ]
       }
     ]
@@ -162,7 +287,13 @@
     "poster": "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1600&auto=format&fit=crop&q=80",
     "description": "Hàn Lập - một thiếu niên bình thường xóm núi nghèo khó, không có căn cốt linh mạch xuất chúng. Nhờ vào sự cẩn trọng, đầu óc suy tính kĩ càng cùng Chưởng Thiên Bình bí ẩn, Hàn Lập vượt qua bao ma chướng tu tiên giới để chứng đạo trường sinh.",
-    "genres": ["Tu Tiên", "Võ Hiệp", "Nam Chính", "Nghịch Tập", "Phim 3D"],
+    "genres": [
+      "Tu Tiên",
+      "Võ Hiệp",
+      "Nam Chính",
+      "Nghịch Tập",
+      "Phim 3D"
+    ],
     "country": "Trung Quốc",
     "year": 2024,
     "status": "Đang cập nhật",
@@ -173,8 +304,16 @@
     "isHot": true,
     "isNew": false,
     "watchLinks": [
-      { "platform": "Bilibili", "url": "https://www.bilibili.tv", "quality": "4K Vietsub Độc Quyền" },
-      { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Pham+Nhan+Tu+Tien", "quality": "Full HD Thuyết Minh" }
+      {
+        "platform": "Bilibili",
+        "url": "https://www.bilibili.tv",
+        "quality": "4K Vietsub Độc Quyền"
+      },
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com/results?search_query=Pham+Nhan+Tu+Tien",
+        "quality": "Full HD Thuyết Minh"
+      }
     ]
   },
   {
@@ -185,7 +324,15 @@
     "poster": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1600&auto=format&fit=crop&q=80",
     "description": "Mộc Mạc Vương Lâm bị coi là phế vật tư chất bình thường. Nhưng bằng ý chí kiên định 'Thuận theo trời là người, nghịch lại trời là tiên', Vương Lâm tát vỡ định mệnh, sát phạt quyết đoán, một tay định đoạt luân hồi sát vực.",
-    "genres": ["Tu Tiên", "Trọng Sinh", "Vả Mặt", "Nam Chính", "Nghịch Tập", "Kinh Dị", "Phim 3D"],
+    "genres": [
+      "Tu Tiên",
+      "Trọng Sinh",
+      "Vả Mặt",
+      "Nam Chính",
+      "Nghịch Tập",
+      "Kinh Dị",
+      "Phim 3D"
+    ],
     "country": "Trung Quốc",
     "year": 2024,
     "status": "Đang cập nhật",
@@ -196,8 +343,16 @@
     "isHot": true,
     "isNew": true,
     "watchLinks": [
-      { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "4K 60fps Vietsub" },
-      { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Tien+Nghich", "quality": "Full HD 1080p" }
+      {
+        "platform": "Tencent Video",
+        "url": "https://v.qq.com",
+        "quality": "4K 60fps Vietsub"
+      },
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com/results?search_query=Tien+Nghich",
+        "quality": "Full HD 1080p"
+      }
     ]
   },
   {
@@ -208,7 +363,14 @@
     "poster": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1563089145-599997674d42?w=1600&auto=format&fit=crop&q=80",
     "description": "Trong vũ trụ bao la lạnh lẽo, chín con rồng kéo theo chiếc quan tài bằng đồng cổ xưa kéo dài qua muôn vàn tinh tú. Diệp Phàm cùng nhóm bạn học vô tình bị kéo vào thế giới tu tiên Bắc Đẩu Tinh Vực kỳ bí đầy rẫy Yêu Tộc và Cổ Hoàng Tộc.",
-    "genres": ["Tu Tiên", "Xuyên Không", "Vô Hạn Lưu", "Nam Chính", "Fantasy", "Phim 3D"],
+    "genres": [
+      "Tu Tiên",
+      "Xuyên Không",
+      "Vô Hạn Lưu",
+      "Nam Chính",
+      "Fantasy",
+      "Phim 3D"
+    ],
     "country": "Trung Quốc",
     "year": 2024,
     "status": "Đang cập nhật",
@@ -219,8 +381,16 @@
     "isHot": false,
     "isNew": false,
     "watchLinks": [
-      { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "Full HD Vietsub" },
-      { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Gia+Thien", "quality": "Full HD Thuyết Minh" }
+      {
+        "platform": "Tencent Video",
+        "url": "https://v.qq.com",
+        "quality": "Full HD Vietsub"
+      },
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com/results?search_query=Gia+Thien",
+        "quality": "Full HD Thuyết Minh"
+      }
     ]
   },
   {
@@ -231,7 +401,14 @@
     "poster": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1600&auto=format&fit=crop&q=80",
     "description": "Loài người đứng trước nguy cơ diệt vong do 72 Ma Thần Trụ tráng lệ giáng xuống. Thiếu niên Long Hạo Thần vì cứu mẹ đã gia nhập Kị Sĩ Thánh Điện, vượt qua các thử thách đao quang kiếm ảnh để bước lên chiếc ngai vàng Thần Ấn vĩ đại.",
-    "genres": ["Tu Tiên", "Võ Hiệp", "Nam Chính", "Tình Cảm", "Fantasy", "Phim 3D"],
+    "genres": [
+      "Tu Tiên",
+      "Võ Hiệp",
+      "Nam Chính",
+      "Tình Cảm",
+      "Fantasy",
+      "Phim 3D"
+    ],
     "country": "Trung Quốc",
     "year": 2024,
     "status": "Đang cập nhật",
@@ -242,8 +419,16 @@
     "isHot": true,
     "isNew": false,
     "watchLinks": [
-      { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Than+An+Vuong+Toa", "quality": "Full HD Vietsub" },
-      { "platform": "iQiyi", "url": "https://www.iq.com", "quality": "Full HD 1080p" }
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com/results?search_query=Than+An+Vuong+Toa",
+        "quality": "Full HD Vietsub"
+      },
+      {
+        "platform": "iQiyi",
+        "url": "https://www.iq.com",
+        "quality": "Full HD 1080p"
+      }
     ]
   },
   {
@@ -254,7 +439,14 @@
     "poster": "https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1600&auto=format&fit=crop&q=80",
     "description": "Bạch Tiểu Thuần - một thiếu niên sợ chết tột cùng nhưng vô cùng thông minh tài trí. Vì khao khát trường sinh bất tử, hắn liên tục thắp hương cầu tiên, để rồi quậy tung Linh Khê Tông với vô số tình huống dở khóc dở cười.",
-    "genres": ["Tu Tiên", "Hài Hước", "Hệ Thống", "Nam Chính", "Vả Mặt", "Phim 2D"],
+    "genres": [
+      "Tu Tiên",
+      "Hài Hước",
+      "Hệ Thống",
+      "Nam Chính",
+      "Vả Mặt",
+      "Phim 2D"
+    ],
     "country": "Trung Quốc",
     "year": 2023,
     "status": "Full",
@@ -265,8 +457,16 @@
     "isHot": false,
     "isNew": false,
     "watchLinks": [
-      { "platform": "Bilibili", "url": "https://www.bilibili.tv", "quality": "Full HD Vietsub Trọn Bộ" },
-      { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Nhat+Niem+Vinh+Hang", "quality": "Full HD Thuyết Minh" }
+      {
+        "platform": "Bilibili",
+        "url": "https://www.bilibili.tv",
+        "quality": "Full HD Vietsub Trọn Bộ"
+      },
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com/results?search_query=Nhat+Niem+Vinh+Hang",
+        "quality": "Full HD Thuyết Minh"
+      }
     ]
   },
   {
@@ -277,7 +477,15 @@
     "poster": "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&auto=format&fit=crop&q=80",
     "description": "Diệp Thu - bách khoa toàn thư của tựa game eSports Vinh Quang bị câu lạc bộ ép buộc giải nghệ và nhường tài khoản Nhất Diệp Chi Thu. Hắn đến làm quản lý tại quán Quán Net Hưng Hân, dùng tài khoản mới Quân Mạc Tiếu tái xuất giang hồ Võng Du.",
-    "genres": ["Võng Du", "Hiện Đại", "Đô Thị Dị Năng", "Học Đường", "Nam Chính", "Nghịch Tập", "Phim 2D"],
+    "genres": [
+      "Võng Du",
+      "Hiện Đại",
+      "Đô Thị Dị Năng",
+      "Học Đường",
+      "Nam Chính",
+      "Nghịch Tập",
+      "Phim 2D"
+    ],
     "country": "Trung Quốc",
     "year": 2023,
     "status": "Full",
@@ -288,8 +496,16 @@
     "isHot": true,
     "isNew": false,
     "watchLinks": [
-      { "platform": "Tencent Video", "url": "https://v.qq.com", "quality": "1080p Vietsub" },
-      { "platform": "Netflix", "url": "https://www.netflix.com", "quality": "Full HD Vietsub" }
+      {
+        "platform": "Tencent Video",
+        "url": "https://v.qq.com",
+        "quality": "1080p Vietsub"
+      },
+      {
+        "platform": "Netflix",
+        "url": "https://www.netflix.com",
+        "quality": "Full HD Vietsub"
+      }
     ]
   },
   {
@@ -300,7 +516,15 @@
     "poster": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1600&auto=format&fit=crop&q=80",
     "description": "Cố Trường Ca xuyên không vào thân xác một thiếu niên công tử thế gia ngút trời nhưng lại mang thân phận Trùm Phản Diện. Biết rõ khí vận chi tử (nam chính chính nghĩa) sắp vả mặt mình, Cố Trường Ca dùng Hệ Thống cướp khí vận, nghịch thiên thu phục các nữ chính.",
-    "genres": ["Xuyên Không", "Xuyên Thư", "Trọng Sinh", "Hệ Thống", "Vả Mặt", "Nghịch Tập", "Phim 3D"],
+    "genres": [
+      "Xuyên Không",
+      "Xuyên Thư",
+      "Trọng Sinh",
+      "Hệ Thống",
+      "Vả Mặt",
+      "Nghịch Tập",
+      "Phim 3D"
+    ],
     "country": "Trung Quốc",
     "year": 2024,
     "status": "Đang cập nhật",
@@ -311,8 +535,16 @@
     "isHot": true,
     "isNew": true,
     "watchLinks": [
-      { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Ta+La+Ta+Dao+Trong+Sinh", "quality": "Full HD 1080p Vietsub" },
-      { "platform": "Bilibili", "url": "https://www.bilibili.tv", "quality": "4K Vietsub" }
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com/results?search_query=Ta+La+Ta+Dao+Trong+Sinh",
+        "quality": "Full HD 1080p Vietsub"
+      },
+      {
+        "platform": "Bilibili",
+        "url": "https://www.bilibili.tv",
+        "quality": "4K Vietsub"
+      }
     ]
   },
   {
@@ -323,7 +555,15 @@
     "poster": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1600&auto=format&fit=crop&q=80",
     "description": "Virus thây ma bùng phát toàn cầu, loài người rơi vào thảm họa mạt thế. Trần Phong bị đồng đội phản bội chết trong bầy quái vật. Trọng sinh trở về 10 ngày trước khi mạt thế giáng xuống, hắn thích trữ vô hạn vật tư và thức tỉnh hệ thống Dị Năng bá đạo.",
-    "genres": ["Mạt Thế", "Đô Thị Dị Năng", "Trọng Sinh", "Hệ Thống", "Vô Hạn Lưu", "Kinh Dị", "Phim 3D"],
+    "genres": [
+      "Mạt Thế",
+      "Đô Thị Dị Năng",
+      "Trọng Sinh",
+      "Hệ Thống",
+      "Vô Hạn Lưu",
+      "Kinh Dị",
+      "Phim 3D"
+    ],
     "country": "Trung Quốc",
     "year": 2024,
     "status": "Đang cập nhật",
@@ -334,8 +574,16 @@
     "isHot": false,
     "isNew": true,
     "watchLinks": [
-      { "platform": "YouTube", "url": "https://www.youtube.com", "quality": "Full HD Vietsub" },
-      { "platform": "iQiyi", "url": "https://www.iq.com", "quality": "Full HD Thuyết Minh" }
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com",
+        "quality": "Full HD Vietsub"
+      },
+      {
+        "platform": "iQiyi",
+        "url": "https://www.iq.com",
+        "quality": "Full HD Thuyết Minh"
+      }
     ]
   },
   {
@@ -346,19 +594,35 @@
     "poster": "https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1600&auto=format&fit=crop&q=80",
     "description": "Nhiếp Ly - Yêu Linh Sư mạnh nhất bị Thánh Đế cùng 6 con Yêu Thần Cấp Thần Tinh vây sát. Nhờ có Thời Khống Yêu Linh Chi Thư, linh hồn hắn quay trở lại năm 13 tuổi khi còn ở Thánh Lan Học Viện. Lần này hắn quyết bảo vệ Quang H輝 Thành.",
-    "genres": ["Trọng Sinh", "Tu Tiên", "Học Đường", "Nam Chính", "Nữ Chính", "Tình Cảm", "Phim 3D"],
+    "genres": [
+      "Trọng Sinh",
+      "Tu Tiên",
+      "Học Đường",
+      "Nam Chính",
+      "Nữ Chính",
+      "Tình Cảm",
+      "Phim 3D"
+    ],
     "country": "Trung Quốc",
     "year": 2024,
     "status": "Đang cập nhật",
     "episodeInfo": "Tập 310 - Vietsub",
-    "rating": 9.0,
+    "rating": 9,
     "views": 3100000,
     "updatedAt": "2026-07-20",
     "isHot": false,
     "isNew": false,
     "watchLinks": [
-      { "platform": "YouTube", "url": "https://www.youtube.com/results?search_query=Yeu+Than+Ky", "quality": "Full HD Vietsub" },
-      { "platform": "Bilibili", "url": "https://www.bilibili.tv", "quality": "Full HD 1080p" }
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com/results?search_query=Yeu+Than+Ky",
+        "quality": "Full HD Vietsub"
+      },
+      {
+        "platform": "Bilibili",
+        "url": "https://www.bilibili.tv",
+        "quality": "Full HD 1080p"
+      }
     ]
   },
   {
@@ -369,7 +633,15 @@
     "poster": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80",
     "backdrop": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1600&auto=format&fit=crop&q=80",
     "description": "Thẩm Sở Sở vô tình xuyên thư vào cuốn tiểu thuyết ngôn tình cẩu huyết làm nữ phụ độc ác kết cục thảm hại. Nhờ mang theo trí tuệ hiện đại cùng Hệ Thống Nữ Chính Bá Đạo, cô vạch mặt dàn trà xanh, chinh phục thương trường đô thị.",
-    "genres": ["Xuyên Thư", "Nữ Chính", "Vả Mặt", "Hiện Đại", "Tình Cảm", "Hài Hước", "Phim 2D"],
+    "genres": [
+      "Xuyên Thư",
+      "Nữ Chính",
+      "Vả Mặt",
+      "Hiện Đại",
+      "Tình Cảm",
+      "Hài Hước",
+      "Phim 2D"
+    ],
     "country": "Trung Quốc",
     "year": 2024,
     "status": "Đang cập nhật",
@@ -380,8 +652,16 @@
     "isHot": false,
     "isNew": true,
     "watchLinks": [
-      { "platform": "Bilibili", "url": "https://www.bilibili.tv", "quality": "Full HD Vietsub" },
-      { "platform": "YouTube", "url": "https://www.youtube.com", "quality": "Full HD Thuyết Minh" }
+      {
+        "platform": "Bilibili",
+        "url": "https://www.bilibili.tv",
+        "quality": "Full HD Vietsub"
+      },
+      {
+        "platform": "YouTube",
+        "url": "https://www.youtube.com",
+        "quality": "Full HD Thuyết Minh"
+      }
     ]
   }
 ]
