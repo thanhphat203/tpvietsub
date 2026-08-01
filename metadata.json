@@ -1,0 +1,6 @@
+{
+  "name": "TP VietSub Donghua - Thế Giới Phim Hoạt Hình Trung Quốc",
+  "description": "Website phim tĩnh tổng hợp Hoạt hình Trung Quốc (Donghua) Vietsub Tu Tiên, Xuyên Không, Trọng Sinh, Hệ Thống...",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
