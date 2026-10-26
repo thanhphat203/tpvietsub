@@ -1,27 +1,40 @@
 /**
  * @file lib/movies.ts
  * Helper utilities for accessing, filtering, and managing Donghua movies
+ * Integrates real API data with local cached data and storage.
  */
 
-import moviesData from '../data/movies.json';
 import { Movie, ALL_GENRES } from '../src/types';
+import { getStaticMovies, fetchLatestUpdates, fetchAggregatedMovies } from '../src/services/api';
 
-const STORAGE_KEY = 'tp_vietsub_movies_data_v1';
+const STORAGE_KEY = 'tp_vietsub_movies_data_v2';
 
-// Initial default movies list
-const defaultMovies: Movie[] = (moviesData as Movie[]).map((movie) => ({
-  ...movie,
-  genres: movie.genres || [],
-  watchLinks: movie.watchLinks || [],
-  rating: movie.rating ?? 8.0,
-  views: movie.views ?? 0,
-  updatedAt: movie.updatedAt || '2026-01-01',
-}));
+let inMemoryMovies: Movie[] = getStaticMovies();
+
+// Initialize and sync background updates
+export async function initializeMovies(): Promise<Movie[]> {
+  try {
+    const apiMovies = await fetchAggregatedMovies(3);
+    if (apiMovies && apiMovies.length > 0) {
+      inMemoryMovies = apiMovies;
+      window.dispatchEvent(new Event('tp_movies_updated'));
+      return apiMovies;
+    }
+  } catch (err) {
+    console.error('Failed to initialize movies from API', err);
+  }
+  return inMemoryMovies;
+}
+
+// Automatically start background sync
+if (typeof window !== 'undefined') {
+  initializeMovies();
+}
 
 /**
- * Helper to get currently active movies array from localStorage or fallback to default
+ * Helper to get currently active movies array
  */
-function getActiveMoviesList(): Movie[] {
+export function getAllMovies(): Movie[] {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -33,7 +46,7 @@ function getActiveMoviesList(): Movie[] {
   } catch (err) {
     console.error('Failed to load movies from localStorage', err);
   }
-  return defaultMovies;
+  return inMemoryMovies;
 }
 
 /**
@@ -41,6 +54,7 @@ function getActiveMoviesList(): Movie[] {
  */
 export function saveMoviesList(updatedList: Movie[]): void {
   try {
+    inMemoryMovies = updatedList;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList, null, 2));
     window.dispatchEvent(new Event('tp_movies_updated'));
   } catch (err) {
@@ -49,20 +63,13 @@ export function saveMoviesList(updatedList: Movie[]): void {
 }
 
 /**
- * Reset stored movies back to original data/movies.json
+ * Reset stored movies back to default
  */
 export function resetMoviesToDefault(): Movie[] {
   localStorage.removeItem(STORAGE_KEY);
+  inMemoryMovies = getStaticMovies();
   window.dispatchEvent(new Event('tp_movies_updated'));
-  return defaultMovies;
-}
-
-/**
- * Get all movies, optionally sorted by newest update first
- */
-export function getAllMovies(): Movie[] {
-  const currentList = getActiveMoviesList();
-  return [...currentList].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  return inMemoryMovies;
 }
 
 /**
@@ -71,7 +78,7 @@ export function getAllMovies(): Movie[] {
 export function getMovieBySlug(slug: string): Movie | undefined {
   if (!slug) return undefined;
   const decodedSlug = decodeURIComponent(slug).toLowerCase().trim();
-  return getAllMovies().find((m) => m.slug.toLowerCase() === decodedSlug);
+  return getAllMovies().find((m) => m.slug?.toLowerCase() === decodedSlug);
 }
 
 /**
@@ -81,7 +88,7 @@ export function getMoviesByGenre(genre: string): Movie[] {
   if (!genre) return [];
   const target = decodeURIComponent(genre).toLowerCase().trim();
   return getAllMovies().filter((m) =>
-    m.genres.some((g) => g.toLowerCase().trim() === target)
+    m.genres.some((g) => g.toLowerCase().trim() === target || target.includes(g.toLowerCase()))
   );
 }
 
@@ -95,21 +102,54 @@ export function getTopViewed(limit = 10): Movie[] {
 }
 
 /**
- * Get movies marked as Hot (isHot === true)
+ * Get movies marked as Hot (isHot === true or high views)
  */
-export function getHotMovies(limit = 8): Movie[] {
-  return getAllMovies()
-    .filter((m) => m.isHot)
+export function getHotMovies(limit = 10): Movie[] {
+  const hot = getAllMovies().filter((m) => m.isHot || m.views > 700000);
+  return hot.length > 0 ? hot.slice(0, limit) : getAllMovies().slice(0, limit);
+}
+
+/**
+ * Get movies marked as New
+ */
+export function getNewMovies(limit = 12): Movie[] {
+  return [...getAllMovies()]
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, limit);
 }
 
 /**
- * Get movies marked as New (isNew === true)
+ * Get Phim Bộ (Series)
  */
-export function getNewMovies(limit = 12): Movie[] {
-  return getAllMovies()
-    .filter((m) => m.isNew)
-    .slice(0, limit);
+export function getSeriesMovies(): Movie[] {
+  return getAllMovies().filter((m) => m.type !== 'single');
+}
+
+/**
+ * Get Phim Lẻ (Single Movie / Chiếu Rạp)
+ */
+export function getSingleMovies(): Movie[] {
+  const singles = getAllMovies().filter((m) => m.type === 'single');
+  if (singles.length > 0) return singles;
+  // If few explicit singles, filter by genre or duration
+  return getAllMovies().filter(
+    (m) =>
+      m.genres.some((g) => g.includes('Lẻ') || g.includes('Chiếu Rạp')) ||
+      m.duration?.toLowerCase().includes('phút')
+  );
+}
+
+/**
+ * Get movies by Air Schedule (e.g. T2, T3, CN)
+ */
+export function getMoviesBySchedule(dayKey: string): Movie[] {
+  if (!dayKey || dayKey === 'all') return getAllMovies();
+  const target = dayKey.toUpperCase().trim();
+  return getAllMovies().filter((m) => {
+    if (!m.airSchedule) return false;
+    const days = m.airSchedule.toUpperCase().split(/[,\s]+/);
+    return days.includes(target);
+  });
 }
 
 /**
@@ -123,7 +163,8 @@ export function searchMovies(query: string): Movie[] {
     const matchOriginal = m.titleOriginal ? m.titleOriginal.toLowerCase().includes(q) : false;
     const matchDesc = m.description.toLowerCase().includes(q);
     const matchGenre = m.genres.some((g) => g.toLowerCase().includes(q));
-    return matchTitle || matchOriginal || matchDesc || matchGenre;
+    const matchYear = m.year.toString().includes(q);
+    return matchTitle || matchOriginal || matchDesc || matchGenre || matchYear;
   });
 }
 
@@ -133,7 +174,7 @@ export function searchMovies(query: string): Movie[] {
 export function getRelatedMovies(currentMovie: Movie, limit = 6): Movie[] {
   if (!currentMovie) return [];
   return getAllMovies()
-    .filter((m) => m.id !== currentMovie.id)
+    .filter((m) => m.id !== currentMovie.id && m.slug !== currentMovie.slug)
     .map((m) => {
       const sharedCount = m.genres.filter((g) => currentMovie.genres.includes(g)).length;
       return { movie: m, score: sharedCount };
@@ -148,7 +189,13 @@ export function getRelatedMovies(currentMovie: Movie, limit = 6): Movie[] {
  * Get list of all available genres
  */
 export function getAllAvailableGenres(): string[] {
-  return [...ALL_GENRES];
+  const customGenres = new Set<string>(ALL_GENRES);
+  getAllMovies().forEach((m) => {
+    m.genres.forEach((g) => {
+      if (g && g.trim()) customGenres.add(g.trim());
+    });
+  });
+  return Array.from(customGenres);
 }
 
 /**
@@ -156,7 +203,7 @@ export function getAllAvailableGenres(): string[] {
  */
 export function getGenreCounts(): Record<string, number> {
   const counts: Record<string, number> = {};
-  ALL_GENRES.forEach((g) => {
+  getAllAvailableGenres().forEach((g) => {
     counts[g] = 0;
   });
   getAllMovies().forEach((m) => {
@@ -171,9 +218,9 @@ export function getGenreCounts(): Record<string, number> {
  * Save or insert single movie
  */
 export function upsertMovie(movieToSave: Movie): Movie[] {
-  const list = getActiveMoviesList();
-  const index = list.findIndex((m) => m.id === movieToSave.id);
-  
+  const list = getAllMovies();
+  const index = list.findIndex((m) => m.id === movieToSave.id || m.slug === movieToSave.slug);
+
   let newList: Movie[];
   if (index >= 0) {
     newList = [...list];
@@ -181,18 +228,17 @@ export function upsertMovie(movieToSave: Movie): Movie[] {
   } else {
     newList = [{ ...movieToSave, updatedAt: new Date().toISOString().split('T')[0] }, ...list];
   }
-  
+
   saveMoviesList(newList);
   return newList;
 }
 
 /**
- * Delete a movie by ID
+ * Delete a movie by ID or Slug
  */
 export function deleteMovieById(id: string): Movie[] {
-  const list = getActiveMoviesList();
-  const newList = list.filter((m) => m.id !== id);
+  const list = getAllMovies();
+  const newList = list.filter((m) => m.id !== id && m.slug !== id);
   saveMoviesList(newList);
   return newList;
 }
-

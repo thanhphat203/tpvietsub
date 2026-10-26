@@ -1,6 +1,6 @@
 /**
  * @file src/types.ts
- * Type definitions for Lù Phim Donghua Movie Site
+ * Type definitions for TP VietSub Donghua Movie Site
  */
 
 export interface WatchLink {
@@ -11,10 +11,33 @@ export interface WatchLink {
 
 export interface MoviePart {
   id: string;           // e.g. "part-1", "part-2"
-  partName: string;     // e.g. "Phần 1", "Phần 2", "Phần 3", "Phần 4 (Mới Nhất)"
+  partName: string;     // e.g. "Phần 1", "Phần 2", "Phần 3", "Phần 4"
   episodeInfo?: string; // e.g. "Full 52 Tập Vietsub"
   watchLinks: WatchLink[];
 }
+
+export interface Episode {
+  tap: string;          // e.g. "1", "2", "3", "SP1"
+  vs?: string;          // e.g. "https://ssplay.net/v/961119259811110.html"
+  tm?: string;          // e.g. "https://ssplay.net/v/530750368204381.html"
+}
+
+export interface AnisrcRawMovie {
+  slug: string;
+  ten_phim: string;
+  ten_goc: string;
+  poster: string;
+  tmdb: string;
+  nam_chieu: string;
+  trang_thai: string;
+  thoi_luong: string;
+  quoc_gia: string;
+  the_loai: string;
+  lich_chieu: string;
+  noi_dung: string;
+}
+
+export type MovieType = 'series' | 'single' | 'all';
 
 export interface Movie {
   id: string;
@@ -27,41 +50,76 @@ export interface Movie {
   genres: string[];
   country: string;
   year: number;
-  status: string;      // e.g. "Đang cập nhật" or "Full"
-  episodeInfo: string;  // e.g. "Tập 87 - 95" or "Full SS3"
-  rating: number;      // e.g. 8.8
-  views: number;       // e.g. 1250000
-  updatedAt: string;   // ISO string e.g. "2026-07-15"
+  status: string;         // e.g. "163 VS+TM" or "Full" or "Hoàn Tất"
+  episodeInfo: string;    // e.g. "Tập 163" or "??? Tập"
+  duration?: string;      // e.g. "??? Tập" or "90 phút"
+  rating: number;         // e.g. 8.8
+  views: number;          // e.g. 1250000
+  updatedAt: string;      // ISO string e.g. "2026-07-15"
   isHot?: boolean;
   isNew?: boolean;
+  type?: 'series' | 'single'; // Phim bộ vs Phim lẻ
+  airSchedule?: string;   // e.g. "T2", "T3", "CN", "T4,CN"
+  tmdbId?: string;
   watchLinks: WatchLink[];
-  parts?: MoviePart[]; // Multi-part support (Phần 1, Phần 2, Phần 3, Phần 4...)
+  episodes?: Episode[];
+  parts?: MoviePart[];    // Multi-part support
+}
+
+export interface WatchHistoryItem {
+  slug: string;
+  title: string;
+  poster: string;
+  episode: string;
+  server: 'vs' | 'tm';
+  updatedAt: number;
 }
 
 export const ALL_GENRES = [
   "Tu Tiên",
+  "Luyện Cấp",
+  "Trùng Sinh",
+  "Chuyển Sinh",
+  "Huyền Huyễn",
   "Xuyên Không",
-  "Xuyên Thư",
-  "Trọng Sinh",
   "Hệ Thống",
   "Võ Hiệp",
   "Mạt Thế",
-  "Đô Thị Dị Năng",
-  "Vô Hạn Lưu",
-  "Võng Du",
-  "Vả Mặt",
-  "Nam Chính",
-  "Nữ Chính",
-  "Nghịch Tập",
-  "Học Đường",
+  "Đô Thị",
   "Hiện Đại",
-  "Kinh Dị",
-  "Tình Cảm",
+  "Vả Mặt",
   "Hài Hước",
-  "Fantasy",
-  "Siêu Thực",
+  "Tình Yêu",
+  "Tình Cảm",
+  "Học Đường",
+  "Hành Động",
+  "Viễn Tưởng",
+  "Cổ Trang",
+  "Phiêu Lưu",
+  "Phim 3D",
   "Phim 2D",
-  "Phim 3D"
+  "Hoạt Hình"
 ] as const;
 
 export type Genre = typeof ALL_GENRES[number];
+
+export const SCHEDULE_DAYS = [
+  { key: 'all', label: 'Tất Cả Lịch' },
+  { key: 'T2', label: 'Thứ Hai', short: 'T2' },
+  { key: 'T3', label: 'Thứ Ba', short: 'T3' },
+  { key: 'T4', label: 'Thứ Tư', short: 'T4' },
+  { key: 'T5', label: 'Thứ Năm', short: 'T5' },
+  { key: 'T6', label: 'Thứ Sáu', short: 'T6' },
+  { key: 'T7', label: 'Thứ Bảy', short: 'T7' },
+  { key: 'CN', label: 'Chủ Nhật', short: 'CN' },
+] as const;
+
+export interface FilterOptions {
+  type: MovieType;
+  genre: string;
+  year: string;
+  status: 'all' | 'ongoing' | 'completed';
+  schedule: string;
+  sortBy: 'updated' | 'year_desc' | 'rating' | 'views' | 'title';
+  page: number;
+}

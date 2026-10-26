@@ -1,6 +1,6 @@
 /**
  * @file src/App.tsx
- * Primary application router container for Lù Phim Donghua
+ * Primary application router container for TP VietSub Donghua
  */
 
 import React, { useEffect } from 'react';
@@ -11,6 +11,12 @@ import { HomePage } from './pages/HomePage';
 import { MovieDetailPage } from './pages/MovieDetailPage';
 import { GenrePage } from './pages/GenrePage';
 import { SearchPage } from './pages/SearchPage';
+import { ExplorePage } from './pages/ExplorePage';
+import { SeriesPage } from './pages/SeriesPage';
+import { SingleMoviesPage } from './pages/SingleMoviesPage';
+import { WeeklySchedulePage } from './pages/WeeklySchedulePage';
+import { LeaderboardPage } from './pages/LeaderboardPage';
+import { BookmarksHistoryPage } from './pages/BookmarksHistoryPage';
 import { AdminPage } from './pages/AdminPage';
 
 // Scroll to top automatically on route changes
@@ -37,6 +43,12 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/phim/:slug" element={<MovieDetailPage />} />
+          <Route path="/kham-pha" element={<ExplorePage />} />
+          <Route path="/phim-bo" element={<SeriesPage />} />
+          <Route path="/phim-le" element={<SingleMoviesPage />} />
+          <Route path="/lich-chieu" element={<WeeklySchedulePage />} />
+          <Route path="/bang-xep-hang" element={<LeaderboardPage />} />
+          <Route path="/lich-su" element={<BookmarksHistoryPage />} />
           <Route path="/the-loai/:genre" element={<GenrePage />} />
           <Route path="/tim-kiem" element={<SearchPage />} />
           <Route path="/admintpvietsubdeptrai03" element={<AdminPage />} />
@@ -51,8 +63,9 @@ function AppContent() {
 
 export default function App() {
   // Use HashRouter if on GitHub Pages subpath to avoid 404s on refresh
-  const isGitHubPages = window.location.hostname.includes('github.io');
-  
+  const isGitHubPages =
+    typeof window !== 'undefined' && window.location.hostname.includes('github.io');
+
   if (isGitHubPages) {
     return (
       <HashRouter>
