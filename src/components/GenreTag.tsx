@@ -28,10 +28,10 @@ export const GenreTag: React.FC<GenreTagProps> = ({
   return (
     <Link
       to={`/the-loai/${encodeURIComponent(genre)}`}
-      className={`inline-flex items-center gap-1.5 rounded-full font-medium transition-all duration-200 border ${sizeClasses[size]} ${
+      className={`inline-flex items-center gap-1.5 rounded-full font-bold transition-all duration-150 border btn-3d ${sizeClasses[size]} ${
         active
-          ? 'bg-[#e50914] text-white border-[#e50914] shadow-md shadow-red-900/30'
-          : 'bg-[#1e1e28] text-gray-300 border-[#2a2a38] hover:bg-[#e50914] hover:text-white hover:border-[#e50914]'
+          ? 'bg-[#e50914] text-white border-[#e50914] shadow-md shadow-red-900/50 scale-105'
+          : 'bg-[#181826] text-gray-300 border-[#28283c] hover:bg-[#e50914] hover:text-white hover:border-[#e50914]'
       }`}
     >
       <span>{genre}</span>

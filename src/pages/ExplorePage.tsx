@@ -19,6 +19,7 @@ export const ExplorePage: React.FC = () => {
 
   // Initialize filters from query params or defaults
   const [filters, setFilters] = useState<FilterOptions>({
+    source: (searchParams.get('source') as any) || 'all',
     type: (searchParams.get('type') as any) || 'all',
     genre: searchParams.get('genre') || 'all',
     year: searchParams.get('year') || 'all',
@@ -42,6 +43,7 @@ export const ExplorePage: React.FC = () => {
   const handleFilterChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
     const params: Record<string, string> = {};
+    if (newFilters.source && newFilters.source !== 'all') params.source = newFilters.source;
     if (newFilters.type !== 'all') params.type = newFilters.type;
     if (newFilters.genre !== 'all') params.genre = newFilters.genre;
     if (newFilters.year !== 'all') params.year = newFilters.year;
@@ -55,6 +57,7 @@ export const ExplorePage: React.FC = () => {
 
   const handleReset = () => {
     handleFilterChange({
+      source: 'all',
       type: 'all',
       genre: 'all',
       year: 'all',
@@ -68,6 +71,11 @@ export const ExplorePage: React.FC = () => {
   // Filter & sort logic
   const filteredMovies = useMemo(() => {
     let result = [...allMovies];
+
+    // Filter by API source
+    if (filters.source && filters.source !== 'all') {
+      result = result.filter((m) => m.source === filters.source);
+    }
 
     // Filter by type
     if (filters.type === 'series') {
@@ -138,19 +146,14 @@ export const ExplorePage: React.FC = () => {
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Page Title */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#14141e] via-[#171724] to-[#14141e] p-6 rounded-2xl border border-[#262638] shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-red-600 via-red-500 to-amber-500 text-white shadow-lg shadow-red-950/60">
-              <Compass className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                KHÁM PHÁ & LỌC PHIM TOÀN DIỆN
-              </h1>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Kho hoạt hình Trung Quốc Donghua chất lượng cao Full HD / 4K Vietsub + Thuyết Minh
-              </p>
-            </div>
+        <div className="bg-[#14141e] p-5 sm:p-6 rounded-2xl border border-[#262638] shadow-xl">
+          <div className="border-l-4 border-[#e50914] pl-3.5 py-1">
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight uppercase">
+              KHÁM PHÁ & LỌC PHIM TOÀN DIỆN
+            </h1>
+            <p className="text-xs text-gray-400 mt-1">
+              Kho phim đa nguồn API tích hợp chất lượng cao Full HD / 4K Vietsub + Thuyết Minh
+            </p>
           </div>
         </div>
 

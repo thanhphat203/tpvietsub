@@ -1,9 +1,9 @@
 /**
  * @file src/pages/HomePage.tsx
- * Cinema-Grade Homepage Layout with Hero, Schedule, Categories, and Multi-Column Layout
+ * Cinema-Grade Homepage Layout with Hero, Schedule, Categories, Multi-Source Switching, and Multi-Column Layout
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { HeroSlider } from '../components/HeroSlider';
 import { MovieRow } from '../components/MovieRow';
@@ -13,29 +13,19 @@ import { ContinueWatchingRow } from '../components/ContinueWatchingRow';
 import { GenreTag } from '../components/GenreTag';
 import {
   getAllMovies,
-  getHotMovies,
-  getNewMovies,
   getTopViewed,
-  getSeriesMovies,
-  getSingleMovies,
-  getMoviesByGenre,
   getAllAvailableGenres,
   initializeMovies,
 } from '../../lib/movies';
 import {
-  Sparkles,
-  Clock,
-  Layers,
-  Flame as FlameIcon,
-  Film,
-  Calendar,
   Compass,
-  Trophy,
   ChevronRight,
+  Database,
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const [allMovies, setAllMovies] = useState(getAllMovies());
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'kkphim' | 'anisrc'>('all');
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -46,17 +36,65 @@ export const HomePage: React.FC = () => {
     return () => window.removeEventListener('tp_movies_updated', handleUpdate);
   }, []);
 
-  const hotMovies = getHotMovies(10);
-  const newMovies = getNewMovies(12);
-  const topViewed = getTopViewed(10);
-  const seriesMovies = getSeriesMovies().slice(0, 12);
-  const singleMovies = getSingleMovies().slice(0, 12);
+  // Filter movies based on selected API source
+  const sourceMovies = useMemo(() => {
+    if (sourceFilter === 'all') return allMovies;
+    return allMovies.filter((m) => m.source === sourceFilter);
+  }, [allMovies, sourceFilter]);
+
+  const hotMovies = useMemo(() => {
+    const hot = sourceMovies.filter((m) => m.isHot || m.views > 700000);
+    return hot.length > 0 ? hot.slice(0, 10) : sourceMovies.slice(0, 10);
+  }, [sourceMovies]);
+
+  const newMovies = useMemo(() => {
+    return [...sourceMovies]
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 12);
+  }, [sourceMovies]);
+
+  const topViewed = useMemo(() => {
+    return [...sourceMovies]
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 10);
+  }, [sourceMovies]);
+
+  const seriesMovies = useMemo(() => {
+    return sourceMovies.filter((m) => m.type !== 'single').slice(0, 12);
+  }, [sourceMovies]);
+
+  const singleMovies = useMemo(() => {
+    const singles = sourceMovies.filter((m) => m.type === 'single');
+    if (singles.length > 0) return singles.slice(0, 12);
+    return sourceMovies
+      .filter(
+        (m) =>
+          m.genres.some((g) => g.includes('Lẻ') || g.includes('Chiếu Rạp')) ||
+          m.duration?.toLowerCase().includes('phút')
+      )
+      .slice(0, 12);
+  }, [sourceMovies]);
+
   const genres = getAllAvailableGenres();
 
   // Genre-specific highlights
-  const tuTienMovies = getMoviesByGenre('Tu Tiên').slice(0, 10);
-  const luyenCapMovies = getMoviesByGenre('Luyện Cấp').slice(0, 10);
-  const huyenHuyenMovies = getMoviesByGenre('Huyền Huyễn').slice(0, 10);
+  const tuTienMovies = useMemo(() => {
+    return sourceMovies
+      .filter((m) => m.genres.some((g) => g.toLowerCase().includes('tu tiên') || g.toLowerCase().includes('võ hiệp')))
+      .slice(0, 10);
+  }, [sourceMovies]);
+
+  const luyenCapMovies = useMemo(() => {
+    return sourceMovies
+      .filter((m) => m.genres.some((g) => g.toLowerCase().includes('luyện cấp') || g.toLowerCase().includes('hành động')))
+      .slice(0, 10);
+  }, [sourceMovies]);
+
+  const huyenHuyenMovies = useMemo(() => {
+    return sourceMovies
+      .filter((m) => m.genres.some((g) => g.toLowerCase().includes('huyền huyễn') || g.toLowerCase().includes('kỳ ảo')))
+      .slice(0, 10);
+  }, [sourceMovies]);
 
   return (
     <div className="min-h-screen bg-[#0f0f14] text-gray-100 pb-20">
@@ -67,15 +105,54 @@ export const HomePage: React.FC = () => {
       {/* Main Content Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-12">
         
-        {/* 2. Continue Watching (if user has active history) */}
+        {/* 2. Source Selector Tabs */}
+        <section className="bg-[#14141e] p-3.5 sm:p-4 rounded-2xl border border-[#242436] shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="border-l-4 border-[#e50914] pl-3 py-0.5">
+              <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">
+                NGUỒN DỮ LIỆU PHIM
+              </h3>
+              <p className="text-[11px] text-gray-400">
+                Tích hợp song song API KKPhim & Anisrc ZoPhim
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { id: 'all', label: 'Tất Cả Nguồn (Đồng Bộ Song Song)' },
+              { id: 'kkphim', label: 'Nguồn KKPhim (HLS Direct)' },
+              { id: 'anisrc', label: 'Nguồn Anisrc (Donghua)' },
+            ].map((tab) => {
+              const active = sourceFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSourceFilter(tab.id as any)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border btn-3d ${
+                    active
+                      ? 'bg-[#e50914] text-white border-red-500 shadow-md shadow-red-950/70'
+                      : 'bg-[#1b1b28] text-gray-300 border-[#28283a] hover:bg-[#252538] hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 3. Continue Watching (if user has active history) */}
         <ContinueWatchingRow />
 
-        {/* 3. Quick Genre Matrix Pill Bar */}
+        {/* 4. Quick Genre Matrix Pill Bar */}
         <section className="bg-[#14141e] p-4 sm:p-5 rounded-2xl border border-[#242436] shadow-lg">
           <div className="flex items-center justify-between gap-3 mb-3">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-gray-300">
-              <Layers className="w-4 h-4 text-[#e50914]" />
-              <span>KHÁM PHÁ THEO THỂ LOẠI HOẠT HÌNH (DONGHUA)</span>
+            <div className="border-l-4 border-[#e50914] pl-3 py-0.5">
+              <span className="text-xs font-black uppercase tracking-wider text-white">
+                KHÁM PHÁ THEO THỂ LOẠI
+              </span>
             </div>
             <Link
               to="/kham-pha"
@@ -92,34 +169,31 @@ export const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* 4. Section: Hot / Trending Movies */}
+        {/* 5. Section: Hot / Trending Movies */}
         <MovieRow
-          title="🔥 Đang Hot Tuần Này"
-          subtitle="Top hoạt hình Trung Quốc thu hút lượt xem khủng nhất"
-          icon={<FlameIcon className="w-6 h-6 text-red-500 fill-red-500" />}
+          title="Phim Thịnh Hành"
+          subtitle="Top tác phẩm thu hút lượt xem cao nhất trên hệ thống"
           movies={hotMovies}
           moreLink="/bang-xep-hang"
         />
 
-        {/* 5. Section: Lịch Chiếu Trong Tuần (Weekly Air Schedule) */}
+        {/* 6. Section: Lịch Chiếu Trong Tuần (Weekly Air Schedule) */}
         <ScheduleSection movies={allMovies} />
 
-        {/* 6. Section: Mới Cập Nhật Tập Mới Nhất */}
+        {/* 7. Section: Mới Cập Nhật Tập Mới Nhất */}
         <MovieRow
-          title="🆕 Mới Cập Nhật"
+          title="Mới Cập Nhật"
           subtitle="Tập phim vừa lên sóng vietsub & thuyết minh siêu nét"
-          icon={<Clock className="w-6 h-6 text-emerald-400" />}
           movies={newMovies}
           moreLink="/kham-pha?sort=updated"
         />
 
-        {/* 7. Phim Bộ vs Phim Lẻ Highlights */}
+        {/* 8. Phim Bộ vs Phim Lẻ Highlights */}
         <div className="grid grid-cols-1 gap-12">
           {/* Phim Bộ */}
           <MovieRow
-            title="🎬 Phim Hoạt Hình Bộ (Series)"
+            title="Phim Bộ Tuyển Chọn"
             subtitle="Các bộ phim dài tập với hành trình tu luyện kinh điển"
-            icon={<Film className="w-6 h-6 text-amber-400" />}
             movies={seriesMovies}
             moreLink="/phim-bo"
           />
@@ -127,23 +201,22 @@ export const HomePage: React.FC = () => {
           {/* Phim Lẻ / Chiếu Rạp */}
           {singleMovies.length > 0 && (
             <MovieRow
-              title="🍿 Phim Lẻ & Bản Chiếu Rạp"
-              subtitle="Những movie điện ảnh và tập đặc biệt chất lượng 4K"
-              icon={<Sparkles className="w-6 h-6 text-sky-400" />}
+              title="Phim Lẻ & Chiếu Rạp"
+              subtitle="Những tác phẩm điện ảnh và tập đặc biệt chất lượng cao"
               movies={singleMovies}
               moreLink="/phim-le"
             />
           )}
         </div>
 
-        {/* 8. Main 2-Column Section: Genre Rows + Top 10 Sidebar */}
+        {/* 9. Main 2-Column Section: Genre Rows + Top 10 Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
           
           {/* Left Column (2 Cols): Categorized Rows */}
           <div className="lg:col-span-2 space-y-12">
             {tuTienMovies.length > 0 && (
               <MovieRow
-                title="⚔️ Tu Tiên - Cầu Đạo Trường Sinh"
+                title="Tu Tiên - Võ Hiệp"
                 subtitle="Đao quang kiếm ảnh, phá toái hư không"
                 movies={tuTienMovies}
                 moreLink="/the-loai/Tu%20Ti%C3%AAn"
@@ -152,7 +225,7 @@ export const HomePage: React.FC = () => {
 
             {luyenCapMovies.length > 0 && (
               <MovieRow
-                title="⚡ Luyện Cấp - Nghịch Thiên Đổi Vận"
+                title="Luyện Cấp - Tu Chân"
                 subtitle="Từng bước quật khởi, trở thành cường giả tối cao"
                 movies={luyenCapMovies}
                 moreLink="/the-loai/Luy%E1%BB%87n%20C%E1%BA%A5p"
@@ -161,7 +234,7 @@ export const HomePage: React.FC = () => {
 
             {huyenHuyenMovies.length > 0 && (
               <MovieRow
-                title="🔮 Huyền Huyễn - Dị Giới"
+                title="Huyền Huyễn - Dị Giới"
                 subtitle="Thế giới kỳ ảo với vạn tộc tranh hùng"
                 movies={huyenHuyenMovies}
                 moreLink="/the-loai/Huy%E1%BB%81n%20Huy%E1%BB%85n"
@@ -174,21 +247,23 @@ export const HomePage: React.FC = () => {
             <TopMoviesList movies={topViewed} />
 
             {/* Quick Explore Banner Card */}
-            <div className="bg-gradient-to-br from-red-950/60 via-[#161624] to-[#12121a] p-6 rounded-2xl border border-red-800/40 space-y-4 shadow-xl">
-              <div className="w-12 h-12 rounded-2xl bg-red-600 text-white flex items-center justify-center shadow-lg shadow-red-950">
-                <Compass className="w-6 h-6" />
+            <div className="bg-[#14141e] p-6 rounded-2xl border border-[#242436] space-y-4 shadow-xl">
+              <div className="border-l-4 border-[#e50914] pl-3 py-0.5">
+                <h3 className="text-base font-black text-white uppercase tracking-wider">
+                  Bộ Lọc Toàn Diện
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Khám phá theo định dạng, thể loại, năm chiếu và nguồn API
+                </p>
               </div>
-              <h3 className="text-lg font-black text-white">
-                Bộ Lọc Tìm Kiếm Nâng Cao
-              </h3>
               <p className="text-xs text-gray-300 leading-relaxed">
-                Tùy chỉnh chọn lựa theo Thể loại, Năm chiếu, Lịch chiếu và Trạng thái hoàn thành nhanh chóng.
+                Hệ thống hỗ trợ tra cứu đa nguồn kết hợp công nghệ streaming HLS Direct không quảng cáo.
               </p>
               <Link
                 to="/kham-pha"
-                className="inline-flex items-center justify-center gap-2 w-full py-3 bg-[#e50914] hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-colors shadow-lg shadow-red-950/60"
+                className="inline-flex items-center justify-center gap-2 w-full py-3 bg-[#e50914] hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-colors shadow-lg shadow-red-950/60 uppercase tracking-wider"
               >
-                Mở Bộ Lọc Toàn Diện &rarr;
+                Mở Bộ Lọc Tìm Kiếm &rarr;
               </Link>
             </div>
           </div>

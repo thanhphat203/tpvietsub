@@ -67,9 +67,10 @@ export const GenrePage: React.FC = () => {
         
         {/* Genre Selector Pills */}
         <div className="bg-[#14141d] p-4 rounded-2xl border border-[#222232] shadow-lg">
-          <div className="flex items-center gap-2 mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">
-            <Layers className="w-4 h-4 text-[#e50914]" />
-            <span>Tất Cả Thể Loại Hoạt Hình Donghua</span>
+          <div className="border-l-4 border-[#e50914] pl-3 py-0.5 mb-3">
+            <span className="text-xs font-black uppercase tracking-wider text-white">
+              TẤT CẢ THỂ LOẠI HOẠT HÌNH
+            </span>
           </div>
           <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
             {allGenres.map((g) => (
@@ -80,15 +81,12 @@ export const GenrePage: React.FC = () => {
 
         {/* Page Header with Sub-filters */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#14141e] p-6 rounded-2xl border border-[#262638] shadow-xl">
-          <div>
-            <div className="text-xs font-bold text-[#e50914] uppercase tracking-wider mb-1">
-              Danh Mục Thể Loại
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
-              Thế Giới Phim: <span className="text-[#e50914]">{decodedGenre}</span>
+          <div className="border-l-4 border-[#e50914] pl-3.5 py-0.5">
+            <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+              THỂ LOẠI: <span className="text-[#e50914]">{decodedGenre}</span>
             </h1>
             <p className="text-xs text-gray-400 mt-1">
-              Tìm thấy <strong className="text-white font-mono">{filteredMovies.length}</strong> bộ phim thuộc thể loại này.
+              Tìm thấy <strong className="text-white font-mono">{filteredMovies.length}</strong> bộ phim thuộc thể loại này
             </p>
           </div>
 

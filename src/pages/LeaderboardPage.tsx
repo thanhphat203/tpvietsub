@@ -38,19 +38,14 @@ export const LeaderboardPage: React.FC = () => {
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#14141e] via-[#1a1714] to-[#14141e] p-6 rounded-2xl border border-[#262638] shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-500 text-black shadow-lg shadow-amber-950/60 font-black">
-              <Trophy className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white">
-                BẢNG XẾP HẠNG HOẠT HÌNH TRUNG QUỐC
-              </h1>
-              <p className="text-xs text-gray-400 mt-1">
-                Top những bộ phim Donghua được yêu thích và có lượt xem cao nhất
-              </p>
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#14141e] p-6 rounded-2xl border border-[#262638] shadow-xl">
+          <div className="border-l-4 border-amber-500 pl-3.5 py-0.5">
+            <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+              BẢNG XẾP HẠNG PHIM
+            </h1>
+            <p className="text-xs text-gray-400 mt-1">
+              Top những bộ phim được yêu thích và có điểm số, lượt xem cao nhất
+            </p>
           </div>
 
           {/* Ranking Type Tabs */}

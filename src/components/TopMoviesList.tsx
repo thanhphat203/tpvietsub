@@ -26,14 +26,14 @@ export const TopMoviesList: React.FC<TopMoviesListProps> = ({ movies }) => {
     <div className="bg-[#14141c] rounded-2xl p-4 sm:p-5 border border-[#262636] shadow-xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#262636]">
-        <div className="flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-amber-400" />
-          <h2 className="text-lg font-extrabold text-white uppercase tracking-wider">
-            TOP 10 ĐÁNH GIÁ CAO
+        <div className="border-l-4 border-amber-500 pl-3 py-0.5">
+          <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+            BẢNG XẾP HẠNG TOP 10
           </h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">Đánh giá và lượt xem cao nhất</p>
         </div>
-        <span className="text-[11px] font-bold text-red-400 bg-red-950/50 px-2 py-0.5 rounded border border-red-900/40">
-          TP VietSub
+        <span className="text-[10px] font-mono font-bold text-red-400 bg-red-950/50 px-2 py-0.5 rounded border border-red-900/40">
+          TP VIETSUB
         </span>
       </div>
 

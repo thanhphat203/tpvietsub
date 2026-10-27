@@ -27,22 +27,17 @@ export const ContinueWatchingRow: React.FC = () => {
   return (
     <section className="bg-[#14141e] border border-[#252538] rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
       <div className="flex items-center justify-between border-b border-[#242436] pb-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-red-600/20 text-[#e50914]">
-            <History className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
-              TIẾP TỤC XEM DONGHUA
-            </h2>
-            <p className="text-[11px] text-gray-400">Xem lại tập phim đang dang dở của bạn</p>
-          </div>
+        <div className="border-l-4 border-[#e50914] pl-3 py-0.5">
+          <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-wider">
+            TIẾP TỤC XEM
+          </h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">Tiếp tục theo dõi tập phim đang xem dở</p>
         </div>
 
         <button
           type="button"
           onClick={clearWatchHistory}
-          className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-red-950/30"
+          className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#181824] border border-white/5 hover:border-red-500/30 btn-3d"
           title="Xóa lịch sử xem"
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -55,7 +50,7 @@ export const ContinueWatchingRow: React.FC = () => {
           <Link
             key={item.slug}
             to={`/phim/${item.slug}?tap=${item.episode}&server=${item.server}`}
-            className="group relative bg-[#1b1b28] border border-[#28283a] hover:border-red-500 rounded-xl overflow-hidden p-2 flex flex-col justify-between transition-all hover:-translate-y-0.5 hover:shadow-lg"
+            className="group relative bg-[#151522] border border-[#262638] hover:border-red-500 rounded-xl overflow-hidden p-2.5 flex flex-col justify-between transition-all card-3d"
           >
             <div className="relative aspect-video rounded-lg overflow-hidden bg-black mb-2">
               <img

@@ -20,6 +20,10 @@ export interface Episode {
   tap: string;          // e.g. "1", "2", "3", "SP1"
   vs?: string;          // e.g. "https://ssplay.net/v/961119259811110.html"
   tm?: string;          // e.g. "https://ssplay.net/v/530750368204381.html"
+  m3u8?: string;        // Direct m3u8 stream (Ad-Free native playback!)
+  m3u8_tm?: string;     // Direct m3u8 stream for Thuyết Minh
+  link_embed?: string;  // Fallback player embed
+  serverName?: string;
 }
 
 export interface AnisrcRawMovie {
@@ -61,6 +65,7 @@ export interface Movie {
   type?: 'series' | 'single'; // Phim bộ vs Phim lẻ
   airSchedule?: string;   // e.g. "T2", "T3", "CN", "T4,CN"
   tmdbId?: string;
+  source?: 'all' | 'anisrc' | 'kkphim'; // API source identifier
   watchLinks: WatchLink[];
   episodes?: Episode[];
   parts?: MoviePart[];    // Multi-part support
@@ -120,6 +125,7 @@ export interface FilterOptions {
   year: string;
   status: 'all' | 'ongoing' | 'completed';
   schedule: string;
+  source?: 'all' | 'anisrc' | 'kkphim';
   sortBy: 'updated' | 'year_desc' | 'rating' | 'views' | 'title';
   page: number;
 }

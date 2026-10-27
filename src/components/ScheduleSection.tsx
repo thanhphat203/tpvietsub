@@ -58,26 +58,21 @@ export const ScheduleSection: React.FC<ScheduleSectionProps> = ({ movies }) => {
     <section className="bg-[#14141e] border border-[#242436] rounded-2xl p-5 sm:p-6 space-y-6 shadow-xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#242436] pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-950/60">
-            <Calendar className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-lg sm:text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
-              LỊCH PHÁT SÓNG DONGHUA TRONG TUẦN
-              <span className="text-xs font-mono font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded">
-                CẬP NHẬT MỖI NGÀY
-              </span>
-            </h2>
-            <p className="text-xs text-gray-400">
-              Theo dõi lịch phát hành các tập mới nhất của hoạt hình Trung Quốc
-            </p>
-          </div>
+        <div className="border-l-4 border-emerald-500 pl-3.5 py-0.5">
+          <h2 className="text-lg sm:text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
+            LỊCH PHÁT SÓNG TRONG TUẦN
+            <span className="text-[11px] font-mono font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded">
+              HÀNG NGÀY
+            </span>
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Theo dõi lịch phát hành các tập mới nhất vietsub & thuyết minh
+          </p>
         </div>
 
         <Link
           to="/lich-chieu"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-950/40 border border-emerald-800/40 px-3.5 py-2 rounded-xl"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-300 hover:text-white transition-colors bg-[#181824] hover:bg-emerald-600 border border-white/10 px-3.5 py-2 rounded-xl btn-3d"
         >
           Xem Toàn Bộ Lịch
           <ChevronRight className="w-4 h-4" />
@@ -96,7 +91,7 @@ export const ScheduleSection: React.FC<ScheduleSectionProps> = ({ movies }) => {
               key={day.key}
               type="button"
               onClick={() => setSelectedDay(day.key)}
-              className={`relative px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center gap-2 border ${
+              className={`relative px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center gap-2 border btn-3d ${
                 isSelected
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-lg shadow-emerald-950/70 scale-105'
                   : 'bg-[#1b1b28] text-gray-300 border-[#28283c] hover:bg-[#252538] hover:text-white'

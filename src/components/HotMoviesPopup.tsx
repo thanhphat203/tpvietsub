@@ -47,10 +47,9 @@ export const HotMoviesPopup: React.FC<HotMoviesPopupProps> = ({ movies }) => {
       <button
         onClick={() => setIsMinimized(false)}
         className="fixed bottom-4 right-4 z-40 bg-[#181822] hover:bg-[#e50914] text-white font-extrabold text-xs px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-red-500/40 transition-all duration-300"
-        aria-label="Mở popup phim hot"
+        aria-label="Mở popup phim thịnh hành"
       >
-        <Flame className="w-4 h-4 text-red-500 fill-red-500" />
-        <span>🔥 PHIM ĐANG HOT ({hotList.length})</span>
+        <span>PHIM THỊNH HÀNH ({hotList.length})</span>
         <ChevronUp className="w-4 h-4 ml-1" />
       </button>
     );
@@ -60,16 +59,11 @@ export const HotMoviesPopup: React.FC<HotMoviesPopupProps> = ({ movies }) => {
     <div className="fixed bottom-4 right-4 z-50 w-80 sm:w-88 bg-[#181824]/95 backdrop-blur-xl rounded-2xl p-4 border border-red-600/40 shadow-2xl shadow-red-950/40 transition-all duration-300 animate-in fade-in slide-in-from-bottom-5">
       {/* Header */}
       <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-red-600/20 text-red-500">
-            <Flame className="w-4 h-4 fill-red-500" />
-          </div>
-          <div>
-            <h3 className="font-black text-sm text-white uppercase tracking-wider flex items-center gap-1.5">
-              Phim Đang Hot
-            </h3>
-            <p className="text-[10px] text-gray-400">Xem ngay không bỏ lỡ</p>
-          </div>
+        <div className="border-l-3 border-[#e50914] pl-2.5">
+          <h3 className="font-black text-sm text-white uppercase tracking-wider">
+            Phim Thịnh Hành
+          </h3>
+          <p className="text-[10px] text-gray-400">Xem ngay không bỏ lỡ</p>
         </div>
 
         <div className="flex items-center gap-1">

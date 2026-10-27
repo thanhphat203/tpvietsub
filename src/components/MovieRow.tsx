@@ -43,20 +43,17 @@ export const MovieRow: React.FC<MovieRowProps> = ({
     <section className="relative my-8 group/row">
       {/* Row Header */}
       <div className="flex items-center justify-between mb-4 px-4 sm:px-6">
-        <div className="flex items-center gap-2.5">
-          {icon && <div className="text-xl">{icon}</div>}
-          <div>
-            <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-              {title}
-            </h2>
-            {subtitle && <p className="text-xs text-gray-400 font-normal">{subtitle}</p>}
-          </div>
+        <div className="border-l-4 border-[#e50914] pl-3.5 py-0.5">
+          <h2 className="text-lg sm:text-xl font-black text-white tracking-tight uppercase">
+            {title}
+          </h2>
+          {subtitle && <p className="text-xs text-gray-400 font-medium mt-0.5">{subtitle}</p>}
         </div>
 
         {moreLink && (
           <Link
             to={moreLink}
-            className="inline-flex items-center gap-1 text-xs font-bold text-[#e50914] hover:text-red-400 transition-colors uppercase tracking-wider bg-red-950/20 px-3 py-1.5 rounded-lg border border-red-900/30 hover:border-red-600/50"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-300 hover:text-white transition-all uppercase tracking-wider bg-[#181824] hover:bg-[#e50914] px-3.5 py-1.5 rounded-xl border border-white/10 btn-3d"
           >
             Xem tất cả
             <ArrowRight className="w-3.5 h-3.5" />

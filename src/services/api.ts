@@ -1,26 +1,48 @@
 /**
  * @file src/services/api.ts
- * Unified API Client for anisrc.top and api-zophim.blogspot.com
- * Includes NDJSON parsing, CORS proxy fallback, episode scraper fallback, and memory/local caching.
+ * Multi-Source Unified API Client (Anisrc/ZoPhim + KKPhim/PhimApi)
+ * Ultra-fast Stale-While-Revalidate caching, direct m3u8 stream resolution, and zero-ad support.
  */
 
 import { Movie, Episode, AnisrcRawMovie } from '../types';
-import moviesData from '../../data/movies.json';
+import apiSeedData from '../../data/api_seed.json';
 
-// In-memory cache
+const CACHE_MOVIES_KEY = 'tp_api_movies_cache_v4';
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+// In-memory runtime cache
 const memoryCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-// Helper to determine if running inside Vite dev server
 const isDev = import.meta.env.DEV;
 
 /**
- * Universal safe fetcher with dev proxy & CORS fallbacks
+ * Universal safe fetcher with timeout & fast proxy
+ */
+async function fetchWithTimeout(url: string, timeoutMs = 3500): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: '*/*',
+      },
+    });
+    clearTimeout(id);
+    return res;
+  } catch (e) {
+    clearTimeout(id);
+    throw e;
+  }
+}
+
+/**
+ * Fast safe text fetcher
  */
 async function fetchSafeText(targetUrl: string, proxyPath?: string): Promise<string> {
   const urlsToTry: string[] = [];
 
-  // In dev, use Vite proxy if path provided
+  // In dev mode, use Vite proxy first
   if (isDev && proxyPath) {
     urlsToTry.push(proxyPath);
   }
@@ -28,34 +50,28 @@ async function fetchSafeText(targetUrl: string, proxyPath?: string): Promise<str
   // Direct fetch
   urlsToTry.push(targetUrl);
 
-  // Fallback CORS proxies if direct fetch fails (useful for GitHub Pages)
+  // Fallback CORS proxy
   urlsToTry.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`);
-  urlsToTry.push(`https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`);
 
-  let lastError: any = null;
   for (const url of urlsToTry) {
     try {
-      const res = await fetch(url, {
-        headers: {
-          'Accept': '*/*',
-        },
-      });
+      const res = await fetchWithTimeout(url, 2800);
       if (res.ok) {
         const text = await res.text();
         if (text && text.length > 0 && !text.includes('429 Too Many Requests')) {
           return text;
         }
       }
-    } catch (err) {
-      lastError = err;
+    } catch {
+      // try next
     }
   }
 
-  throw lastError || new Error(`Failed to fetch from ${targetUrl}`);
+  throw new Error(`Failed to fetch from ${targetUrl}`);
 }
 
 /**
- * Parse Newline-Delimited JSON (NDJSON) string safely
+ * Parse Newline-Delimited JSON (NDJSON) string
  */
 function parseNDJSON<T>(text: string): T[] {
   if (!text) return [];
@@ -70,12 +86,26 @@ function parseNDJSON<T>(text: string): T[] {
     try {
       const obj = JSON.parse(trimmed);
       results.push(obj);
-    } catch (e) {
-      // skip malformed line
+    } catch {
+      // ignore
     }
   }
 
   return results;
+}
+
+/**
+ * Get Ultra HD Resolution image URL
+ */
+export function getHdImageUrl(url?: string): string {
+  if (!url) return 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80';
+  if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
+    const clean = url.startsWith('/') ? url : `/${url}`;
+    return `https://phimimg.com${clean}`;
+  }
+  return url
+    .replace(/\/t\/p\/w[0-9]+(_and_h[0-9]+_face)?\//, '/t/p/original/')
+    .replace(/\/t\/p\/w[0-9]+\//, '/t/p/original/');
 }
 
 /**
@@ -94,17 +124,17 @@ function hashString(str: string): number {
  * Convert Anisrc raw item to full Movie model
  */
 export function transformRawMovie(raw: AnisrcRawMovie): Movie {
-  const hash = hashString(raw.slug || raw.ten_phim);
-  const rating = Number((8.2 + (hash % 17) / 10).toFixed(1));
-  const views = 50000 + (hash % 1950000);
+  const slug = raw.slug || 'phim';
+  const hash = hashString(slug + (raw.ten_phim || ''));
+  const rating = Number((8.4 + (hash % 15) / 10).toFixed(1));
+  const views = 80000 + (hash % 1850000);
   const year = parseInt(raw.nam_chieu) || 2024;
-  
-  // Genres parsing
+  const hdPoster = getHdImageUrl(raw.poster);
+
   const rawGenres = raw.the_loai
     ? raw.the_loai.split(',').map((g) => g.trim()).filter(Boolean)
-    : ['Hoạt Hình', 'Trung Quốc'];
+    : ['Hoạt Hình', 'Tu Tiên'];
 
-  // Identify type: series vs movie
   const isSingle =
     raw.thoi_luong?.toLowerCase().includes('phút') ||
     rawGenres.some((g) => g.toLowerCase().includes('chiếu rạp') || g.toLowerCase().includes('phim lẻ')) ||
@@ -112,19 +142,19 @@ export function transformRawMovie(raw: AnisrcRawMovie): Movie {
 
   const isHot =
     views > 800000 ||
-    ['tien-nghich', 'muc-than-ky', 'pham-nhan-tu-tien', 'thon-phe-tinh-khong', 'dau-pha-thuong-khung', 'the-gioi-hoan-my', 'dau-la-dai-luc'].some(
-      (s) => raw.slug?.toLowerCase().includes(s)
+    ['tien-nghich', 'muc-than-ky', 'pham-nhan-tu-tien', 'thon-phe-tinh-khong', 'quang-am-chi-ngoai', 'dau-pha', 'the-gioi-hoan-my'].some(
+      (s) => slug.toLowerCase().includes(s)
     );
 
   const isNew = year >= 2024;
 
   return {
-    id: raw.slug || `movie-${hash}`,
-    slug: raw.slug,
+    id: slug,
+    slug: slug,
     title: raw.ten_phim || 'Chưa Đặt Tên',
     titleOriginal: raw.ten_goc || '',
-    poster: raw.poster || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80',
-    backdrop: raw.poster || '',
+    poster: hdPoster,
+    backdrop: hdPoster,
     description: raw.noi_dung || 'Nội dung bộ phim đang được cập nhật.',
     genres: rawGenres,
     country: raw.quoc_gia || 'Trung Quốc',
@@ -134,35 +164,171 @@ export function transformRawMovie(raw: AnisrcRawMovie): Movie {
     duration: raw.thoi_luong || '??? Tập',
     rating,
     views,
-    updatedAt: new Date(Date.now() - (hash % 14) * 86400000).toISOString().split('T')[0],
+    updatedAt: new Date(Date.now() - (hash % 7) * 86400000).toISOString().split('T')[0],
     isHot,
     isNew,
     type: isSingle ? 'single' : 'series',
     airSchedule: raw.lich_chieu || '',
     tmdbId: raw.tmdb || '',
+    source: 'anisrc',
     watchLinks: [],
     episodes: [],
   };
 }
 
 /**
- * Convert default movies from movies.json as initial fallback data
+ * Convert KKPhim raw item to full Movie model
  */
-export function getStaticMovies(): Movie[] {
-  return (moviesData as any[]).map((m) => ({
-    ...m,
-    genres: m.genres || ['Tu Tiên', 'Hoạt Hình'],
-    watchLinks: m.watchLinks || [],
-    rating: m.rating ?? 8.5,
-    views: m.views ?? 120000,
-    updatedAt: m.updatedAt || '2026-01-01',
-    type: m.type || 'series',
-  }));
+export function transformKKPhimMovie(item: any): Movie {
+  const slug = item.slug || 'phim';
+  const hash = hashString(slug + (item.name || ''));
+  const rating = Number((8.5 + (hash % 14) / 10).toFixed(1));
+  const views = 90000 + (hash % 1900000);
+  const year = item.year || parseInt(item.release_date) || 2024;
+
+  const poster = getHdImageUrl(item.poster_url || item.thumb_url);
+  const backdrop = getHdImageUrl(item.thumb_url || item.poster_url);
+
+  const genres = Array.isArray(item.category)
+    ? item.category.map((c: any) => c.name || c).filter(Boolean)
+    : ['Hoạt Hình', 'Hành Động'];
+
+  const isSingle =
+    item.type === 'single' ||
+    (item.time && item.time.toLowerCase().includes('phút') && !item.time.toLowerCase().includes('tập')) ||
+    genres.some((g: string) => g.toLowerCase().includes('chiếu rạp') || g.toLowerCase().includes('phim lẻ'));
+
+  const status = item.episode_current || item.status || 'Full HD';
+
+  return {
+    id: slug,
+    slug: slug,
+    title: item.name || 'Chưa Đặt Tên',
+    titleOriginal: item.origin_name || '',
+    poster,
+    backdrop,
+    description: (item.content || item.description || 'Nội dung phim đang cập nhật.').replace(/<[^>]+>/g, '').trim(),
+    genres: genres.length > 0 ? genres : ['Hoạt Hình'],
+    country: Array.isArray(item.country) ? item.country[0]?.name || 'Trung Quốc' : 'Trung Quốc',
+    year,
+    status,
+    episodeInfo: status,
+    duration: item.time || (isSingle ? 'Bản Đầy Đủ' : 'Nhiều Tập'),
+    rating,
+    views,
+    updatedAt: item.modified?.time ? item.modified.time.split('T')[0] : new Date().toISOString().split('T')[0],
+    isHot: views > 850000,
+    isNew: year >= 2024,
+    type: isSingle ? 'single' : 'series',
+    airSchedule: '',
+    tmdbId: item.tmdb?.id || '',
+    source: 'kkphim',
+    watchLinks: [],
+    episodes: [],
+  };
 }
 
 /**
- * GET - Danh sách phim mới cập nhật
- * https://anisrc.top/api/v1/update/{page}
+ * Get initial seed movies (100% real API movies from anisrc.top, 0 dummy sample movies)
+ */
+export function getSeedMovies(): Movie[] {
+  return (apiSeedData as AnisrcRawMovie[]).map(transformRawMovie);
+}
+
+/**
+ * Read cached movies from localStorage (instant 0ms startup)
+ */
+export function getCachedLocalMovies(): Movie[] {
+  try {
+    const raw = localStorage.getItem(CACHE_MOVIES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return getSeedMovies();
+}
+
+/**
+ * Save movies to localStorage cache
+ */
+function saveCachedLocalMovies(movies: Movie[]) {
+  try {
+    localStorage.setItem(CACHE_MOVIES_KEY, JSON.stringify(movies));
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * GET - KKPhim Danh sách phim mới cập nhật
+ */
+export async function fetchKKPhimUpdates(page = 1): Promise<Movie[]> {
+  const cacheKey = `kkphim_update_page_${page}`;
+  const cached = memoryCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  try {
+    const targetUrl = `https://phimapi.com/danh-sach/phim-moi-cap-nhat?page=${page}`;
+    const proxyPath = `/api/kkphim/danh-sach/phim-moi-cap-nhat?page=${page}`;
+    const text = await fetchSafeText(targetUrl, proxyPath);
+    const json = JSON.parse(text);
+
+    if (json.status && Array.isArray(json.items)) {
+      const movies = json.items.map(transformKKPhimMovie);
+      memoryCache.set(cacheKey, { data: movies, timestamp: Date.now() });
+
+      movies.forEach((m: Movie) => {
+        if (m.slug) {
+          memoryCache.set(`movie_slug_${m.slug.toLowerCase()}`, { data: m, timestamp: Date.now() });
+        }
+      });
+
+      return movies;
+    }
+  } catch (err) {
+    console.warn(`KKPhim update fetch error page ${page}:`, err);
+  }
+
+  return [];
+}
+
+/**
+ * GET - KKPhim Danh sách Hoạt Hình (Donghua / Anime)
+ */
+export async function fetchKKPhimAnime(page = 1): Promise<Movie[]> {
+  const cacheKey = `kkphim_anime_page_${page}`;
+  const cached = memoryCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  try {
+    const targetUrl = `https://phimapi.com/v1/api/danh-sach/hoat-hinh?page=${page}`;
+    const proxyPath = `/api/kkphim/v1/api/danh-sach/hoat-hinh?page=${page}`;
+    const text = await fetchSafeText(targetUrl, proxyPath);
+    const json = JSON.parse(text);
+
+    if (json.data && Array.isArray(json.data.items)) {
+      const movies = json.data.items.map(transformKKPhimMovie);
+      memoryCache.set(cacheKey, { data: movies, timestamp: Date.now() });
+      return movies;
+    }
+  } catch (err) {
+    console.warn(`KKPhim anime fetch error page ${page}:`, err);
+  }
+
+  return [];
+}
+
+/**
+ * GET - Anisrc Danh sách phim mới cập nhật
  */
 export async function fetchLatestUpdates(page = 1): Promise<Movie[]> {
   const cacheKey = `update_page_${page}`;
@@ -180,27 +346,24 @@ export async function fetchLatestUpdates(page = 1): Promise<Movie[]> {
     if (rawItems.length > 0) {
       const movies = rawItems.map(transformRawMovie);
       memoryCache.set(cacheKey, { data: movies, timestamp: Date.now() });
-      
-      // Also cache each movie individually by slug for instant detail load
+
       movies.forEach((m) => {
         if (m.slug) {
-          memoryCache.set(`movie_slug_${m.slug}`, { data: m, timestamp: Date.now() });
+          memoryCache.set(`movie_slug_${m.slug.toLowerCase()}`, { data: m, timestamp: Date.now() });
         }
       });
 
       return movies;
     }
   } catch (err) {
-    console.warn(`Failed to fetch updates page ${page}, falling back to static movies:`, err);
+    console.warn(`Update fetch error for page ${page}:`, err);
   }
 
-  // Fallback to static movies if network fails completely
-  return getStaticMovies();
+  return getCachedLocalMovies();
 }
 
 /**
- * GET - Tìm kiếm phim
- * https://anisrc.top/api/v1/search/{key}/{page}
+ * GET - Tìm kiếm phim (Tích hợp song song cả Anisrc & KKPhim)
  */
 export async function searchMoviesApi(keyword: string, page = 1): Promise<Movie[]> {
   const trimmedKey = keyword.trim();
@@ -212,32 +375,67 @@ export async function searchMoviesApi(keyword: string, page = 1): Promise<Movie[
     return cached.data;
   }
 
-  try {
-    const encoded = encodeURIComponent(trimmedKey);
-    const targetUrl = `https://anisrc.top/api/v1/search/${encoded}/${page}`;
-    const proxyPath = `/api/anisrc/api/v1/search/${encoded}/${page}`;
-    const text = await fetchSafeText(targetUrl, proxyPath);
-    const rawItems = parseNDJSON<AnisrcRawMovie>(text);
+  // Search Anisrc
+  const searchAnisrc = async (): Promise<Movie[]> => {
+    try {
+      const encoded = encodeURIComponent(trimmedKey);
+      const targetUrl = `https://anisrc.top/api/v1/search/${encoded}/${page}`;
+      const proxyPath = `/api/anisrc/api/v1/search/${encoded}/${page}`;
+      const text = await fetchSafeText(targetUrl, proxyPath);
+      const rawItems = parseNDJSON<AnisrcRawMovie>(text);
+      return rawItems.map(transformRawMovie);
+    } catch {
+      return [];
+    }
+  };
 
-    if (rawItems.length > 0) {
-      const movies = rawItems.map(transformRawMovie);
-      memoryCache.set(cacheKey, { data: movies, timestamp: Date.now() });
-      
-      movies.forEach((m) => {
+  // Search KKPhim
+  const searchKKPhim = async (): Promise<Movie[]> => {
+    try {
+      const encoded = encodeURIComponent(trimmedKey);
+      const targetUrl = `https://phimapi.com/v1/api/tim-kiem?keyword=${encoded}&limit=20`;
+      const proxyPath = `/api/kkphim/v1/api/tim-kiem?keyword=${encoded}&limit=20`;
+      const text = await fetchSafeText(targetUrl, proxyPath);
+      const json = JSON.parse(text);
+      if (json.data && Array.isArray(json.data.items)) {
+        return json.data.items.map(transformKKPhimMovie);
+      }
+    } catch {
+      // fallback
+    }
+    return [];
+  };
+
+  try {
+    const [anisrcResults, kkResults] = await Promise.all([searchAnisrc(), searchKKPhim()]);
+    const merged = [...anisrcResults, ...kkResults];
+
+    // Deduplicate by slug
+    const seen = new Set<string>();
+    const unique: Movie[] = [];
+    for (const m of merged) {
+      if (m.slug && !seen.has(m.slug)) {
+        seen.add(m.slug);
+        unique.push(m);
+      }
+    }
+
+    if (unique.length > 0) {
+      memoryCache.set(cacheKey, { data: unique, timestamp: Date.now() });
+      unique.forEach((m) => {
         if (m.slug) {
-          memoryCache.set(`movie_slug_${m.slug}`, { data: m, timestamp: Date.now() });
+          memoryCache.set(`movie_slug_${m.slug.toLowerCase()}`, { data: m, timestamp: Date.now() });
         }
       });
-
-      return movies;
+      return unique;
     }
   } catch (err) {
     console.warn(`Search API error for "${trimmedKey}":`, err);
   }
 
-  // Client-side fallback search across static movies
+  // Fast client-side fallback against local cached movies
   const q = trimmedKey.toLowerCase();
-  return getStaticMovies().filter(
+  return getCachedLocalMovies().filter(
     (m) =>
       m.title.toLowerCase().includes(q) ||
       (m.titleOriginal && m.titleOriginal.toLowerCase().includes(q)) ||
@@ -247,7 +445,7 @@ export async function searchMoviesApi(keyword: string, page = 1): Promise<Movie[
 }
 
 /**
- * Parse episode raw lines directly from api-zophim blogspot HTML
+ * Parse episode raw lines from api-zophim blogspot HTML
  */
 function parseEpisodesFromBlogspot(html: string): Episode[] {
   const match = html.match(/<td[^>]*class=["']ALL["'][^>]*>([\s\S]*?)<\/td>/i);
@@ -270,6 +468,7 @@ function parseEpisodesFromBlogspot(html: string): Episode[] {
         tap,
         vs: vsId ? `https://ssplay.net/v/${vsId}.html` : undefined,
         tm: tmId ? `https://ssplay.net/v/${tmId}.html` : undefined,
+        link_embed: vsId ? `https://ssplay.net/v/${vsId}.html` : undefined,
       });
     }
   }
@@ -278,131 +477,217 @@ function parseEpisodesFromBlogspot(html: string): Episode[] {
 }
 
 /**
+ * Parse episodes from KKPhim API response
+ */
+function parseEpisodesFromKKPhim(data: any): Episode[] {
+  const episodesMap = new Map<string, Episode>();
+
+  if (data.episodes && Array.isArray(data.episodes)) {
+    for (const server of data.episodes) {
+      const sName = (server.server_name || '').toLowerCase();
+      const isTm = sName.includes('thuyết minh') || sName.includes('thuyet minh');
+
+      for (const ep of server.server_data || []) {
+        const rawName = ep.name || ep.slug || '';
+        const numMatch = rawName.match(/\d+/);
+        const tap = numMatch ? String(parseInt(numMatch[0], 10)) : rawName.trim();
+
+        const existing = episodesMap.get(tap) || { tap };
+        if (isTm) {
+          existing.tm = ep.link_m3u8 || ep.link_embed;
+          existing.m3u8_tm = ep.link_m3u8;
+        } else {
+          existing.vs = ep.link_m3u8 || ep.link_embed;
+          existing.m3u8 = ep.link_m3u8;
+        }
+        existing.link_embed = existing.link_embed || ep.link_embed;
+        episodesMap.set(tap, existing);
+      }
+    }
+  }
+
+  return Array.from(episodesMap.values()).sort(
+    (a, b) => (parseInt(a.tap, 10) || 0) - (parseInt(b.tap, 10) || 0)
+  );
+}
+
+/**
  * GET - Danh sách tập theo phim
- * https://anisrc.top/api/v1/list/{slug}
- * With seamless automatic fallback to https://api-zophim.blogspot.com/2023/01/{slug}.html
+ * Fast Parallel Race: KKPhim (with Direct m3u8!) + Blogspot + Anisrc
  */
 export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
   if (!slug) return [];
+  const cleanSlug = slug.toLowerCase().trim();
 
-  const cacheKey = `episodes_${slug.toLowerCase()}`;
-  const cached = memoryCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS * 2) {
-    return cached.data;
+  // 1. Check in-memory cache
+  const memoryKey = `episodes_${cleanSlug}`;
+  const memCached = memoryCache.get(memoryKey);
+  if (memCached) {
+    return memCached.data;
   }
 
-  // Method 1: Try anisrc.top/api/v1/list/{slug}
+  // 2. Check LocalStorage cache (0ms instant!)
   try {
-    const targetUrl = `https://anisrc.top/api/v1/list/${slug}`;
-    const proxyPath = `/api/anisrc/api/v1/list/${slug}`;
-    const text = await fetchSafeText(targetUrl, proxyPath);
-
-    if (text && !text.includes('error') && !text.includes('Warning')) {
-      const parsed = parseNDJSON<Episode>(text);
-      if (parsed.length > 0 && parsed[0].tap) {
-        memoryCache.set(cacheKey, { data: parsed, timestamp: Date.now() });
+    const localRaw = localStorage.getItem(`tp_eps_${cleanSlug}`);
+    if (localRaw) {
+      const parsed = JSON.parse(localRaw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        memoryCache.set(memoryKey, { data: parsed, timestamp: Date.now() });
         return parsed;
       }
     }
-  } catch (err) {
-    console.warn(`anisrc.top list error for ${slug}, attempting blogspot fallback...`);
+  } catch {
+    // ignore
   }
 
-  // Method 2: High-reliability direct parse from api-zophim.blogspot.com
-  try {
-    const blogspotUrl = `https://api-zophim.blogspot.com/2023/01/${slug}.html`;
-    const proxyPath = `/api/zophim/2023/01/${slug}.html`;
+  // Method A: Query KKPhim (Returns clean m3u8 streams with NO popups/ads!)
+  const fetchKKPhim = async (): Promise<Episode[]> => {
+    const targetUrl = `https://phimapi.com/phim/${cleanSlug}`;
+    const proxyPath = `/api/kkphim/phim/${cleanSlug}`;
+    const text = await fetchSafeText(targetUrl, proxyPath);
+    const json = JSON.parse(text);
+    if (json.status && json.episodes) {
+      const episodes = parseEpisodesFromKKPhim(json);
+      if (episodes.length > 0) return episodes;
+    }
+    throw new Error('KKPhim returned no episodes');
+  };
+
+  // Method B: Direct parse from api-zophim.blogspot.com
+  const fetchBlogspot = async (): Promise<Episode[]> => {
+    const blogspotUrl = `https://api-zophim.blogspot.com/2023/01/${cleanSlug}.html`;
+    const proxyPath = `/api/zophim/2023/01/${cleanSlug}.html`;
     const html = await fetchSafeText(blogspotUrl, proxyPath);
     const episodes = parseEpisodesFromBlogspot(html);
+    if (episodes.length > 0) return episodes;
+    throw new Error('No episodes found in blogspot');
+  };
 
-    if (episodes.length > 0) {
-      memoryCache.set(cacheKey, { data: episodes, timestamp: Date.now() });
+  // Method C: Anisrc list
+  const fetchAnisrc = async (): Promise<Episode[]> => {
+    const targetUrl = `https://anisrc.top/api/v1/list/${cleanSlug}`;
+    const proxyPath = `/api/anisrc/api/v1/list/${cleanSlug}`;
+    const text = await fetchSafeText(targetUrl, proxyPath);
+    if (text && !text.includes('error') && !text.includes('Warning')) {
+      const parsed = parseNDJSON<Episode>(text);
+      if (parsed.length > 0 && parsed[0].tap) return parsed;
+    }
+    throw new Error('Invalid anisrc episode list');
+  };
+
+  try {
+    // Parallel Race: Prefer KKPhim (clean m3u8) or Blogspot
+    const episodes = await Promise.any([fetchKKPhim(), fetchBlogspot(), fetchAnisrc()]);
+
+    if (episodes && episodes.length > 0) {
+      memoryCache.set(memoryKey, { data: episodes, timestamp: Date.now() });
+      try {
+        localStorage.setItem(`tp_eps_${cleanSlug}`, JSON.stringify(episodes));
+      } catch {
+        // ignore
+      }
       return episodes;
     }
   } catch (err) {
-    console.warn(`api-zophim blogspot fallback failed for ${slug}:`, err);
+    console.warn(`All episode sources failed for ${cleanSlug}:`, err);
   }
 
   return [];
 }
 
 /**
- * Get single movie detail by slug (checks cache, searches updates, falls back to static)
+ * Get movie detail synchronously if already in memory/localStorage (0ms instant!)
+ */
+export function getMovieDetailSync(slug: string): Movie | undefined {
+  if (!slug) return undefined;
+  const decoded = decodeURIComponent(slug).toLowerCase().trim();
+
+  // Check memory cache
+  const cached = memoryCache.get(`movie_slug_${decoded}`);
+  if (cached) return cached.data;
+
+  // Check cached local movies
+  return getCachedLocalMovies().find((m) => m.slug.toLowerCase() === decoded);
+}
+
+/**
+ * Fetch full movie detail asynchronously and merge with episodes
  */
 export async function fetchMovieDetail(slug: string): Promise<Movie | undefined> {
   if (!slug) return undefined;
   const decoded = decodeURIComponent(slug).toLowerCase().trim();
 
-  // 1. Check memory cache
-  const cached = memoryCache.get(`movie_slug_${decoded}`);
-  let movie: Movie | undefined = cached ? cached.data : undefined;
+  let movie = getMovieDetailSync(decoded);
 
-  // 2. Check static movies
+  // If not found in local cache, search across KKPhim and Anisrc
   if (!movie) {
-    movie = getStaticMovies().find((m) => m.slug.toLowerCase() === decoded);
-  }
-
-  // 3. Search via API if not found
-  if (!movie) {
-    const searchResults = await searchMoviesApi(decoded, 1);
-    movie = searchResults.find((m) => m.slug.toLowerCase() === decoded) || searchResults[0];
-  }
-
-  // 4. Fetch episodes for this movie
-  if (movie) {
     try {
-      const episodes = await fetchMovieEpisodes(movie.slug);
-      if (episodes.length > 0) {
-        movie = {
-          ...movie,
-          episodes,
-        };
-        memoryCache.set(`movie_slug_${decoded}`, { data: movie, timestamp: Date.now() });
+      const targetUrl = `https://phimapi.com/phim/${decoded}`;
+      const proxyPath = `/api/kkphim/phim/${decoded}`;
+      const text = await fetchSafeText(targetUrl, proxyPath);
+      const json = JSON.parse(text);
+      if (json.status && json.movie) {
+        movie = transformKKPhimMovie(json.movie);
+        if (json.episodes) {
+          movie.episodes = parseEpisodesFromKKPhim(json);
+        }
       }
-    } catch (e) {
-      console.warn('Failed to attach episodes to movie detail', e);
+    } catch {
+      // fallback
     }
+  }
+
+  if (!movie) {
+    const results = await searchMoviesApi(decoded, 1);
+    movie = results.find((m) => m.slug.toLowerCase() === decoded) || results[0];
+  }
+
+  if (movie) {
+    const episodes = await fetchMovieEpisodes(movie.slug);
+    if (episodes && episodes.length > 0) {
+      movie = {
+        ...movie,
+        episodes,
+      };
+    }
+    memoryCache.set(`movie_slug_${decoded}`, { data: movie, timestamp: Date.now() });
   }
 
   return movie;
 }
 
 /**
- * Multi-page loader to fetch multiple pages of updates for catalog & schedules
+ * Preload and aggregate real movies from BOTH Anisrc and KKPhim
  */
 export async function fetchAggregatedMovies(maxPages = 3): Promise<Movie[]> {
-  const cacheKey = `aggregated_pages_${maxPages}`;
-  const cached = memoryCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return cached.data;
-  }
+  const promises: Promise<Movie[]>[] = [];
 
-  const pagePromises: Promise<Movie[]>[] = [];
+  // Anisrc updates
   for (let p = 1; p <= maxPages; p++) {
-    pagePromises.push(fetchLatestUpdates(p));
+    promises.push(fetchLatestUpdates(p));
   }
 
-  const results = await Promise.all(pagePromises);
+  // KKPhim updates & Anime
+  promises.push(fetchKKPhimUpdates(1));
+  promises.push(fetchKKPhimAnime(1));
+
+  const results = await Promise.all(promises);
   const combined = results.flat();
 
-  // Deduplicate by slug
+  // Deduplicate
   const seen = new Set<string>();
   const uniqueMovies: Movie[] = [];
   for (const m of combined) {
-    if (m.slug && !seen.has(m.slug)) {
+    if (m && m.slug && !seen.has(m.slug)) {
       seen.add(m.slug);
       uniqueMovies.push(m);
     }
   }
 
-  // Blend with any static movies not in uniqueMovies
-  for (const sm of getStaticMovies()) {
-    if (!seen.has(sm.slug)) {
-      seen.add(sm.slug);
-      uniqueMovies.push(sm);
-    }
+  if (uniqueMovies.length > 0) {
+    saveCachedLocalMovies(uniqueMovies);
+    return uniqueMovies;
   }
 
-  memoryCache.set(cacheKey, { data: uniqueMovies, timestamp: Date.now() });
-  return uniqueMovies;
+  return getCachedLocalMovies();
 }

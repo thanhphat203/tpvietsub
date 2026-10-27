@@ -15,11 +15,8 @@ export const Footer: React.FC = () => {
           
           {/* Col 1: Brand */}
           <div className="space-y-3 md:col-span-1">
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e50914] to-red-600 flex items-center justify-center text-white shadow-md shadow-red-950/50">
-                <Film className="w-4 h-4 fill-current" />
-              </div>
-              <span className="font-black text-lg text-white tracking-tight">
+            <Link to="/" className="flex items-center group">
+              <span className="font-black text-xl text-white tracking-tight">
                 <span className="text-[#e50914]">TP</span> VIETSUB
               </span>
             </Link>

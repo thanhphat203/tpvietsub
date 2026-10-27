@@ -74,13 +74,12 @@ export const SearchPage: React.FC = () => {
         {/* Search Header Container */}
         <div className="bg-[#14141e] p-6 rounded-2xl border border-[#262638] space-y-5 shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-black text-white flex items-center gap-2">
-                <Search className="w-6 h-6 text-[#e50914]" />
-                TÌM KIẾM PHIM HOẠT HÌNH DONGHUA
+            <div className="border-l-4 border-[#e50914] pl-3.5 py-0.5">
+              <h1 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight">
+                TÌM KIẾM PHIM TOÀN HỆ THỐNG
               </h1>
               <p className="text-xs text-gray-400 mt-1">
-                Tìm kiếm theo tên phim, tên gốc, thể loại hoặc từ khóa liên quan
+                Tìm kiếm đa nguồn theo tên phim, tên gốc, thể loại hoặc nhân vật
               </p>
             </div>
 

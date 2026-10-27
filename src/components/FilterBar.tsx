@@ -1,10 +1,10 @@
 /**
  * @file src/components/FilterBar.tsx
- * Multi-dimensional filter bar: Category, Genre, Year, Air Schedule, Status & Sort
+ * Cinema-Grade Multi-dimensional filter bar: API Source, Format, Genre, Year, Air Schedule, Status & Sort
  */
 
 import React, { useState } from 'react';
-import { Filter, RotateCcw, ChevronDown, ChevronUp, Layers, Calendar, Film, Sparkles, Clock } from 'lucide-react';
+import { RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { ALL_GENRES, SCHEDULE_DAYS, FilterOptions } from '../types';
 
 interface FilterBarProps {
@@ -33,6 +33,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   };
 
   const hasActiveFilters =
+    (filters.source && filters.source !== 'all') ||
     filters.type !== 'all' ||
     filters.genre !== 'all' ||
     filters.year !== 'all' ||
@@ -43,21 +44,16 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     <div className="bg-[#14141e] border border-[#252538] rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#242436] pb-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-red-600/20 text-[#e50914]">
-            <Filter className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
-              BỘ LỌC TÌM KIẾM CHI TIẾT
-              {hasActiveFilters && (
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              )}
-            </h2>
-            <p className="text-[11px] text-gray-400">
-              Tìm thấy <strong className="text-white font-mono">{totalResults}</strong> bộ phim phù hợp
-            </p>
-          </div>
+        <div className="border-l-4 border-[#e50914] pl-3 py-0.5">
+          <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+            BỘ LỌC TÌM KIẾM CHI TIẾT
+            {hasActiveFilters && (
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            )}
+          </h2>
+          <p className="text-[11px] text-gray-400">
+            Tìm thấy <strong className="text-white font-mono">{totalResults}</strong> bộ phim phù hợp
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -65,7 +61,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <button
               type="button"
               onClick={onReset}
-              className="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-950/40 border border-red-800/40 transition-colors"
+              className="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/40 border border-red-800/40 transition-colors btn-3d"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Đặt lại bộ lọc
@@ -93,10 +89,40 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       {/* Filter Matrix Content */}
       <div className={`space-y-4 sm:block ${isExpanded ? 'block' : 'hidden'}`}>
         
-        {/* Row 1: Phân Loại (Phim Bộ vs Phim Lẻ) */}
+        {/* Row 0: Nguồn Dữ Liệu API (KKPhim vs Anisrc) */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider w-24 shrink-0 flex items-center gap-1">
-            <Film className="w-3.5 h-3.5 text-red-500" /> Định dạng:
+          <span className="text-xs font-black text-gray-400 uppercase tracking-wider w-24 shrink-0">
+            Nguồn API:
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { id: 'all', label: 'Tất Cả Nguồn (Đồng Bộ)' },
+              { id: 'kkphim', label: 'KKPhim API (HLS Direct)' },
+              { id: 'anisrc', label: 'Anisrc / ZoPhim (Donghua)' },
+            ].map((item) => {
+              const active = (filters.source || 'all') === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => updateField('source', item.id as any)}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border btn-3d ${
+                    active
+                      ? 'bg-[#e50914] text-white border-red-500 shadow-md shadow-red-950/60'
+                      : 'bg-[#1b1b28] text-gray-300 border-[#28283a] hover:bg-[#252538] hover:text-white'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Row 1: Định dạng (Phim Bộ vs Phim Lẻ) */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-black text-gray-400 uppercase tracking-wider w-24 shrink-0">
+            Định dạng:
           </span>
           <div className="flex flex-wrap gap-1.5">
             {[
@@ -110,9 +136,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   key={item.id}
                   type="button"
                   onClick={() => updateField('type', item.id as any)}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border ${
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border btn-3d ${
                     active
-                      ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white border-red-500 shadow-md shadow-red-950/60'
+                      ? 'bg-[#e50914] text-white border-red-500 shadow-md shadow-red-950/60'
                       : 'bg-[#1b1b28] text-gray-300 border-[#28283a] hover:bg-[#252538] hover:text-white'
                   }`}
                 >
@@ -125,8 +151,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
         {/* Row 2: Thể Loại */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider w-24 shrink-0 flex items-center gap-1">
-            <Layers className="w-3.5 h-3.5 text-amber-500" /> Thể loại:
+          <span className="text-xs font-black text-gray-400 uppercase tracking-wider w-24 shrink-0">
+            Thể loại:
           </span>
           <div className="flex flex-wrap gap-1.5 max-h-24 sm:max-h-32 overflow-y-auto pr-1">
             <button
@@ -134,7 +160,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               onClick={() => updateField('genre', 'all')}
               className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border ${
                 filters.genre === 'all'
-                  ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white border-red-500'
+                  ? 'bg-[#e50914] text-white border-red-500 shadow-md shadow-red-950/60'
                   : 'bg-[#1b1b28] text-gray-300 border-[#28283a] hover:bg-[#252538] hover:text-white'
               }`}
             >
@@ -147,7 +173,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   key={g}
                   type="button"
                   onClick={() => updateField('genre', g)}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border ${
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border btn-3d ${
                     active
                       ? 'bg-[#e50914] text-white border-red-500 shadow-md shadow-red-950/60'
                       : 'bg-[#1b1b28] text-gray-300 border-[#28283a] hover:bg-[#252538] hover:text-white'
@@ -162,8 +188,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
         {/* Row 3: Năm Phát Hành */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider w-24 shrink-0 flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5 text-emerald-500" /> Năm chiếu:
+          <span className="text-xs font-black text-gray-400 uppercase tracking-wider w-24 shrink-0">
+            Năm chiếu:
           </span>
           <div className="flex flex-wrap gap-1.5">
             {YEARS.map((y) => {
@@ -173,7 +199,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   key={y}
                   type="button"
                   onClick={() => updateField('year', y)}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border ${
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border btn-3d ${
                     active
                       ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-950/60'
                       : 'bg-[#1b1b28] text-gray-300 border-[#28283a] hover:bg-[#252538] hover:text-white'
@@ -188,8 +214,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
         {/* Row 4: Lịch Chiếu Trong Tuần */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider w-24 shrink-0 flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-sky-400" /> Lịch chiếu:
+          <span className="text-xs font-black text-gray-400 uppercase tracking-wider w-24 shrink-0">
+            Lịch chiếu:
           </span>
           <div className="flex flex-wrap gap-1.5">
             {SCHEDULE_DAYS.map((d) => {
@@ -199,7 +225,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   key={d.key}
                   type="button"
                   onClick={() => updateField('schedule', d.key)}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border ${
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border btn-3d ${
                     active
                       ? 'bg-sky-600 text-white border-sky-400 shadow-md shadow-sky-950/60'
                       : 'bg-[#1b1b28] text-gray-300 border-[#28283a] hover:bg-[#252538] hover:text-white'
@@ -215,7 +241,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         {/* Row 5: Sắp Xếp & Trạng Thái */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#222232]">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-black text-gray-400 uppercase tracking-wider">
               Trạng thái:
             </span>
             <div className="flex gap-1.5">
@@ -228,7 +254,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   key={s.id}
                   type="button"
                   onClick={() => updateField('status', s.id as any)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border btn-3d ${
                     filters.status === s.id
                       ? 'bg-amber-600 text-white border-amber-500'
                       : 'bg-[#1b1b28] text-gray-400 border-[#28283a] hover:text-white'
@@ -241,7 +267,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-black text-gray-400 uppercase tracking-wider">
               Sắp xếp theo:
             </span>
             <select

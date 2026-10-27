@@ -45,19 +45,16 @@ export const SingleMoviesPage: React.FC = () => {
         
         {/* Banner Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#14141e] p-6 rounded-2xl border border-[#262638] shadow-xl">
-          <div>
-            <div className="text-xs font-bold text-amber-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <Film className="w-4 h-4" /> Bản Chiếu Rạp & Tập Đặc Biệt (Movie / OVA)
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">
-              PHIM LẺ DONGHUA & CHIẾU RẠP
+          <div className="border-l-4 border-[#e50914] pl-3.5 py-0.5">
+            <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+              PHIM LẺ & CHIẾU RẠP
             </h1>
             <p className="text-xs text-gray-400 mt-1">
-              Các bộ phim hoạt hình ngắn tập, movie điện ảnh chiếu rạp chất lượng cao Full HD / 4K
+              Các tác phẩm điện ảnh chiếu rạp và tập đặc biệt chất lượng cao Full HD / 4K
             </p>
           </div>
 
-          <div className="text-xs font-mono text-gray-400 bg-black/40 px-3 py-1.5 rounded-xl border border-white/5">
+          <div className="text-xs font-mono text-gray-400 bg-black/40 px-3.5 py-2 rounded-xl border border-white/5">
             Tổng cộng: <strong className="text-amber-400 font-bold">{filteredMovies.length}</strong> bộ phim
           </div>
         </div>

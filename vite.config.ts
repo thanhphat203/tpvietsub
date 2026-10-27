@@ -12,6 +12,18 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-icons': ['lucide-react'],
+            'vendor-hls': ['hls.js'],
+          },
+        },
+      },
+    },
     server: {
       port: 3000,
       proxy: {
@@ -26,6 +38,12 @@ export default defineConfig(() => {
           changeOrigin: true,
           secure: false,
           rewrite: (p) => p.replace(/^\/api\/zophim/, ''),
+        },
+        '/api/kkphim': {
+          target: 'https://phimapi.com',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (p) => p.replace(/^\/api\/kkphim/, ''),
         },
       },
       hmr: process.env.DISABLE_HMR !== 'true',

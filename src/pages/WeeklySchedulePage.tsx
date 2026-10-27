@@ -68,19 +68,14 @@ export const WeeklySchedulePage: React.FC = () => {
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#14141e] via-[#171a26] to-[#14141e] p-6 rounded-2xl border border-[#262638] shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-lg shadow-emerald-950/60">
-              <Calendar className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white">
-                LỊCH PHÁT SÓNG HOẠT HÌNH TRUNG QUỐC (DONGHUA)
-              </h1>
-              <p className="text-xs text-gray-400 mt-1">
-                Lịch ra tập mới mỗi tuần, cập nhật Vietsub & Thuyết minh siêu tốc
-              </p>
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#14141e] p-6 rounded-2xl border border-[#262638] shadow-xl">
+          <div className="border-l-4 border-emerald-500 pl-3.5 py-0.5">
+            <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+              LỊCH PHÁT SÓNG TRONG TUẦN
+            </h1>
+            <p className="text-xs text-gray-400 mt-1">
+              Lịch ra tập mới mỗi tuần, cập nhật Vietsub & Thuyết minh siêu tốc
+            </p>
           </div>
 
           <div className="text-xs font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-800/40 px-3.5 py-1.5 rounded-xl font-bold">

@@ -52,19 +52,16 @@ export const SeriesPage: React.FC = () => {
         
         {/* Banner Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#14141e] p-6 rounded-2xl border border-[#262638] shadow-xl">
-          <div>
-            <div className="text-xs font-bold text-red-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <Film className="w-4 h-4" /> Hoạt Hình Trung Quốc Dài Tập
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">
+          <div className="border-l-4 border-[#e50914] pl-3.5 py-0.5">
+            <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
               PHIM BỘ DONGHUA (SERIES)
             </h1>
             <p className="text-xs text-gray-400 mt-1">
-              Tuyển tập các siêu phẩm hoạt hình 3D/2D nhiều tập có cốt truyện đỉnh cao, cập nhật hàng tuần
+              Tuyển tập các siêu phẩm hoạt hình nhiều tập có cốt truyện đỉnh cao, cập nhật liên tục
             </p>
           </div>
 
-          <div className="text-xs font-mono text-gray-400 bg-black/40 px-3 py-1.5 rounded-xl border border-white/5">
+          <div className="text-xs font-mono text-gray-400 bg-black/40 px-3.5 py-2 rounded-xl border border-white/5">
             Tổng cộng: <strong className="text-emerald-400 font-bold">{filteredMovies.length}</strong> bộ phim
           </div>
         </div>

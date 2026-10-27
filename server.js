@@ -7,6 +7,8 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -22,6 +24,26 @@ app.use((req, res, next) => {
     return res.sendStatus(200);
   }
   next();
+});
+
+// Proxy for phimapi.com (KKPhim API)
+app.get('/api/kkphim/*', async (req, res) => {
+  try {
+    const targetPath = req.params[0];
+    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    const targetUrl = `https://phimapi.com/${targetPath}${queryString}`;
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+    const data = await response.text();
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.status(response.status).send(data);
+  } catch (error) {
+    console.error('KKPhim proxy error:', error);
+    res.status(500).json({ error: 'Proxy failed to fetch from KKPhim' });
+  }
 });
 
 // Proxy for anisrc.top

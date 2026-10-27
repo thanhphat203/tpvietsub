@@ -32,9 +32,9 @@ export const BookmarksHistoryPage: React.FC = () => {
         
         {/* Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#14141e] p-6 rounded-2xl border border-[#262638] shadow-xl">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">
-              TỦ PHIM CỦA BẠN
+          <div className="border-l-4 border-[#e50914] pl-3.5 py-0.5">
+            <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+              TỦ PHIM CÁ NHÂN
             </h1>
             <p className="text-xs text-gray-400 mt-1">
               Quản lý tiến độ xem tập dở dang và danh sách các bộ phim đã lưu

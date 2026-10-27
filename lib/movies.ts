@@ -1,17 +1,18 @@
 /**
  * @file lib/movies.ts
- * Helper utilities for accessing, filtering, and managing Donghua movies
- * Integrates real API data with local cached data and storage.
+ * Real-Time Movie Data Management (100% Real API Data, 0 Dummy Movies)
  */
 
 import { Movie, ALL_GENRES } from '../src/types';
-import { getStaticMovies, fetchLatestUpdates, fetchAggregatedMovies } from '../src/services/api';
+import { getCachedLocalMovies, fetchAggregatedMovies } from '../src/services/api';
 
-const STORAGE_KEY = 'tp_vietsub_movies_data_v2';
+const STORAGE_KEY = 'tp_vietsub_movies_data_v3';
 
-let inMemoryMovies: Movie[] = getStaticMovies();
+let inMemoryMovies: Movie[] = getCachedLocalMovies();
 
-// Initialize and sync background updates
+/**
+ * Initialize movies: load local cache immediately, then sync fresh updates in background
+ */
 export async function initializeMovies(): Promise<Movie[]> {
   try {
     const apiMovies = await fetchAggregatedMovies(3);
@@ -21,18 +22,18 @@ export async function initializeMovies(): Promise<Movie[]> {
       return apiMovies;
     }
   } catch (err) {
-    console.error('Failed to initialize movies from API', err);
+    console.error('Failed to sync movies from API', err);
   }
   return inMemoryMovies;
 }
 
-// Automatically start background sync
+// Background startup sync
 if (typeof window !== 'undefined') {
   initializeMovies();
 }
 
 /**
- * Helper to get currently active movies array
+ * Get all movies currently in memory or local cache
  */
 export function getAllMovies(): Movie[] {
   try {
@@ -46,16 +47,16 @@ export function getAllMovies(): Movie[] {
   } catch (err) {
     console.error('Failed to load movies from localStorage', err);
   }
-  return inMemoryMovies;
+  return inMemoryMovies.length > 0 ? inMemoryMovies : getCachedLocalMovies();
 }
 
 /**
- * Save updated movies array to localStorage and emit custom update event
+ * Save updated movies array to localStorage and emit update event
  */
 export function saveMoviesList(updatedList: Movie[]): void {
   try {
     inMemoryMovies = updatedList;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList, null, 2));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
     window.dispatchEvent(new Event('tp_movies_updated'));
   } catch (err) {
     console.error('Failed to save movies to localStorage', err);
@@ -63,11 +64,11 @@ export function saveMoviesList(updatedList: Movie[]): void {
 }
 
 /**
- * Reset stored movies back to default
+ * Reset stored movies back to API seed
  */
 export function resetMoviesToDefault(): Movie[] {
   localStorage.removeItem(STORAGE_KEY);
-  inMemoryMovies = getStaticMovies();
+  inMemoryMovies = getCachedLocalMovies();
   window.dispatchEvent(new Event('tp_movies_updated'));
   return inMemoryMovies;
 }
@@ -102,7 +103,7 @@ export function getTopViewed(limit = 10): Movie[] {
 }
 
 /**
- * Get movies marked as Hot (isHot === true or high views)
+ * Get movies marked as Hot
  */
 export function getHotMovies(limit = 10): Movie[] {
   const hot = getAllMovies().filter((m) => m.isHot || m.views > 700000);
@@ -131,7 +132,6 @@ export function getSeriesMovies(): Movie[] {
 export function getSingleMovies(): Movie[] {
   const singles = getAllMovies().filter((m) => m.type === 'single');
   if (singles.length > 0) return singles;
-  // If few explicit singles, filter by genre or duration
   return getAllMovies().filter(
     (m) =>
       m.genres.some((g) => g.includes('Lẻ') || g.includes('Chiếu Rạp')) ||
