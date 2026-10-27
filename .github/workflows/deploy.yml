@@ -3,8 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
-# Cấp quyền cho GitHub Actions deploy lên Pages
 permissions:
   contents: read
   pages: write
