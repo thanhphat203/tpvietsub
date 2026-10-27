@@ -1011,23 +1011,142 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
   };
 
   try {
-    // Parallel Race across all 5 providers (First to respond with valid episodes wins!)
-    const episodes = await Promise.any([
-      fetchKKPhim(),
+    // Parallel Fetch across all providers to aggregate multiple independent streaming servers
+    const results = await Promise.allSettled([
       fetchNguonC(),
+      fetchKKPhim(),
+      fetchAnisrc(),
       fetchPhim4K(),
       fetchBlogspot(),
-      fetchAnisrc(),
     ]);
 
-    if (episodes && episodes.length > 0) {
-      memoryCache.set(memoryKey, { data: episodes, timestamp: Date.now() });
-      try {
-        localStorage.setItem(`tp_eps_${cleanSlug}`, JSON.stringify(episodes));
-      } catch {
-        // ignore
+    const successfulLists: { provider: string; eps: Episode[] }[] = [];
+    if (results[0].status === 'fulfilled' && results[0].value.length > 0) {
+      successfulLists.push({ provider: 'NguonC', eps: results[0].value });
+    }
+    if (results[1].status === 'fulfilled' && results[1].value.length > 0) {
+      successfulLists.push({ provider: 'KKPhim', eps: results[1].value });
+    }
+    if (results[2].status === 'fulfilled' && results[2].value.length > 0) {
+      successfulLists.push({ provider: 'Anisrc', eps: results[2].value });
+    }
+    if (results[3].status === 'fulfilled' && results[3].value.length > 0) {
+      successfulLists.push({ provider: 'Phim4K', eps: results[3].value });
+    }
+    if (results[4].status === 'fulfilled' && results[4].value.length > 0) {
+      successfulLists.push({ provider: 'Blogspot', eps: results[4].value });
+    }
+
+    if (successfulLists.length > 0) {
+      // Merge episodes by tap number
+      const tapMap = new Map<string, Episode>();
+
+      for (const listObj of successfulLists) {
+        for (const ep of listObj.eps) {
+          const existing = tapMap.get(ep.tap) || {
+            tap: ep.tap,
+            servers: [],
+          };
+          const currentServers = existing.servers ? [...existing.servers] : [];
+
+          if (listObj.provider === 'NguonC') {
+            if (ep.vs || ep.link_embed) {
+              currentServers.push({
+                id: 'server_nguonc',
+                name: 'Server VIP 1 (Không Chặn)',
+                url: ep.vs || ep.link_embed || '',
+                m3u8: ep.m3u8,
+                isEmbed: !ep.m3u8,
+              });
+            }
+          } else if (listObj.provider === 'KKPhim') {
+            if (ep.vs || ep.m3u8) {
+              const isBlacklisted = (ep.m3u8 || ep.vs || '').includes('kkphimplayer');
+              currentServers.push({
+                id: 'server_kkphim',
+                name: isBlacklisted ? 'Server VIP 2 (HLS)' : 'Server VIP 2 (HLS Siêu Nét)',
+                url: ep.vs || ep.m3u8 || '',
+                m3u8: ep.m3u8,
+                isEmbed: false,
+              });
+            }
+            if (ep.tm || ep.m3u8_tm) {
+              currentServers.push({
+                id: 'server_tm',
+                name: 'Server Thuyết Minh',
+                url: ep.tm || ep.m3u8_tm || '',
+                m3u8: ep.m3u8_tm,
+                isEmbed: false,
+              });
+            }
+          } else if (listObj.provider === 'Anisrc') {
+            if (ep.vs) {
+              currentServers.push({
+                id: 'server_anisrc',
+                name: 'Server VIP 3 (Dự Phòng)',
+                url: ep.vs,
+                isEmbed: true,
+              });
+            }
+          } else if (listObj.provider === 'Phim4K') {
+            if (ep.vs || ep.link_embed) {
+              currentServers.push({
+                id: 'server_phim4k',
+                name: 'Server 4K UHD',
+                url: ep.vs || ep.link_embed || '',
+                m3u8: ep.m3u8,
+                isEmbed: !ep.m3u8,
+              });
+            }
+          } else if (listObj.provider === 'Blogspot') {
+            if (ep.vs) {
+              currentServers.push({
+                id: 'server_blogspot',
+                name: 'Server VIP Dự Phòng',
+                url: ep.vs,
+                isEmbed: true,
+              });
+            }
+          }
+
+          // Deduplicate servers by id
+          const uniqueServers = currentServers.filter(
+            (s, idx, self) => idx === self.findIndex((t) => t.id === s.id)
+          );
+
+          // Pick safest default stream (preferring non-kkphimplayer URL if possible)
+          const safeServer = uniqueServers.find((s) => !s.url.includes('kkphimplayer')) || uniqueServers[0];
+          if (safeServer) {
+            existing.vs = safeServer.url;
+            existing.m3u8 = safeServer.m3u8;
+            existing.link_embed = safeServer.isEmbed ? safeServer.url : existing.link_embed || safeServer.url;
+          } else {
+            existing.vs = ep.vs || existing.vs;
+            existing.m3u8 = ep.m3u8 || existing.m3u8;
+            existing.link_embed = ep.link_embed || existing.link_embed;
+          }
+
+          if (ep.tm) existing.tm = ep.tm;
+          if (ep.m3u8_tm) existing.m3u8_tm = ep.m3u8_tm;
+
+          existing.servers = uniqueServers;
+          tapMap.set(ep.tap, existing);
+        }
       }
-      return episodes;
+
+      const mergedEpisodes = Array.from(tapMap.values()).sort(
+        (a, b) => (parseInt(a.tap, 10) || 0) - (parseInt(b.tap, 10) || 0)
+      );
+
+      if (mergedEpisodes.length > 0) {
+        memoryCache.set(memoryKey, { data: mergedEpisodes, timestamp: Date.now() });
+        try {
+          localStorage.setItem(`tp_eps_${cleanSlug}`, JSON.stringify(mergedEpisodes));
+        } catch {
+          // ignore
+        }
+        return mergedEpisodes;
+      }
     }
   } catch (err) {
     console.warn(`All episode sources failed for ${cleanSlug}:`, err);

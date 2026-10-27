@@ -21,6 +21,8 @@ import {
   getActionMovies,
   getChineseMovies,
   getKoreanMovies,
+  getVietnameseMovies,
+  getCinemaMovies,
   getSingleMovies,
   getSeriesMovies,
   initializeMovies,
@@ -30,7 +32,7 @@ import { ChevronRight, Sparkles, ChevronDown } from 'lucide-react';
 export const HomePage: React.FC = () => {
   const [allMovies, setAllMovies] = useState(getAllMovies());
   const [selectedCategory, setSelectedCategory] = useState<
-    'all' | '3d' | 'anime' | 'action' | 'china' | 'korea' | 'series' | 'single'
+    'all' | 'vietnam' | 'chieurap' | '3d' | 'anime' | 'action' | 'china' | 'korea' | 'series' | 'single'
   >('all');
   const [categoryVisibleCount, setCategoryVisibleCount] = useState<number>(24);
 
@@ -89,6 +91,14 @@ export const HomePage: React.FC = () => {
     return getKoreanMovies().slice(0, 24);
   }, [allMovies]);
 
+  const vietnameseMovies = useMemo(() => {
+    return getVietnameseMovies().slice(0, 24);
+  }, [allMovies]);
+
+  const chieuRapMovies = useMemo(() => {
+    return getCinemaMovies().slice(0, 24);
+  }, [allMovies]);
+
   // Genre-specific highlights
   const tuTienMovies = useMemo(() => {
     return allMovies
@@ -113,6 +123,10 @@ export const HomePage: React.FC = () => {
   // Dynamic category items when user clicks a specific category pill
   const activeCategoryList = useMemo(() => {
     switch (selectedCategory) {
+      case 'vietnam':
+        return { title: 'Phim Việt Nam Tuyển Chọn', movies: getVietnameseMovies(), link: '/kham-pha?country=Việt+Nam' };
+      case 'chieurap':
+        return { title: 'Phim Chiếu Rạp Bom Tấn', movies: getCinemaMovies(), link: '/phim-le' };
       case '3d':
         return { title: 'Hoạt Hình 3D', movies: get3DAnimationMovies(), link: '/the-loai/Ho%E1%BA%A1t%20H%C3%ACnh' };
       case 'anime':
@@ -155,6 +169,8 @@ export const HomePage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {[
               { id: 'all', label: 'Tất Cả Phim' },
+              { id: 'vietnam', label: '🇻🇳 Phim Việt Nam' },
+              { id: 'chieurap', label: '🎬 Phim Chiếu Rạp' },
               { id: '3d', label: 'Hoạt Hình 3D' },
               { id: 'anime', label: 'Anime Tuyển Chọn' },
               { id: 'action', label: 'Phim Hành Động' },
@@ -351,6 +367,26 @@ export const HomePage: React.FC = () => {
               subtitle="Những tác phẩm điện ảnh và tập đặc biệt chất lượng cao"
               movies={singleMovies}
               moreLink="/phim-le"
+            />
+          )}
+
+          {/* Phim Chiếu Rạp Mới Nhất */}
+          {chieuRapMovies.length > 0 && (
+            <MovieRow
+              title="Phim Chiếu Rạp Mới Nhất"
+              subtitle="Tuyển tập siêu phẩm điện ảnh màn ảnh rộng chuẩn Full HD và 4K"
+              movies={chieuRapMovies}
+              moreLink="/phim-le"
+            />
+          )}
+
+          {/* Phim Việt Nam Tuyển Chọn */}
+          {vietnameseMovies.length > 0 && (
+            <MovieRow
+              title="Phim Việt Nam Chiếu Rạp & Đặc Sắc"
+              subtitle="Các bộ phim điện ảnh bom tấn và truyền hình Việt Nam đặc sắc"
+              movies={vietnameseMovies}
+              moreLink="/kham-pha?country=Việt+Nam"
             />
           )}
         </div>

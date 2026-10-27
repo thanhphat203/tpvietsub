@@ -170,6 +170,7 @@ export const Header: React.FC = () => {
               {isCountryOpen && (
                 <div className="absolute top-full left-0 mt-2 w-48 bg-[#14141e] rounded-2xl shadow-2xl border border-[#262638] p-2.5 flex flex-col gap-1 z-50">
                   {[
+                    { label: '🇻🇳 Phim Việt Nam', value: 'Việt Nam' },
                     { label: 'Phim Trung Quốc', value: 'Trung Quốc' },
                     { label: 'Phim Hàn Quốc', value: 'Hàn Quốc' },
                     { label: 'Phim Nhật Bản', value: 'Nhật Bản' },

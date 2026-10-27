@@ -6,7 +6,7 @@
 import { Movie, ALL_GENRES } from '../src/types';
 import { getCachedLocalMovies, fetchAggregatedMovies } from '../src/services/api';
 
-const STORAGE_KEY = 'tp_vietsub_movies_data_v4';
+const STORAGE_KEY = 'tp_vietsub_movies_data_v5';
 
 let inMemoryMovies: Movie[] = getCachedLocalMovies();
 
@@ -246,6 +246,27 @@ export function getChineseMovies(): Movie[] {
  */
 export function getKoreanMovies(): Movie[] {
   return getAllMovies().filter((m) => m.country?.toLowerCase().includes('hàn'));
+}
+
+/**
+ * Get Phim Việt Nam (Điện Ảnh & Phim Bộ Việt Nam)
+ */
+export function getVietnameseMovies(): Movie[] {
+  return getAllMovies().filter((m) => {
+    return (
+      m.country?.toLowerCase().includes('việt') ||
+      m.genres.some((g) => g.toLowerCase().includes('việt'))
+    );
+  });
+}
+
+/**
+ * Get Phim Chiếu Rạp (Theatrical / Cinema Movies)
+ */
+export function getCinemaMovies(): Movie[] {
+  return getAllMovies().filter((m) => {
+    return m.genres.some((g) => g.toLowerCase().includes('chiếu rạp'));
+  });
 }
 
 /**

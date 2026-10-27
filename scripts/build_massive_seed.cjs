@@ -281,12 +281,34 @@ async function main() {
     { url: 'https://phimapi.com/v1/api/the-loai/hanh-dong?page=2', type: 'single' },
     { url: 'https://phimapi.com/v1/api/the-loai/kinh-di?page=1', type: 'single' },
     { url: 'https://phimapi.com/v1/api/the-loai/vien-tuong?page=1', type: 'single' },
+    { url: 'https://phimapi.com/v1/api/quoc-gia/viet-nam?page=1', type: 'single' },
+    { url: 'https://phimapi.com/v1/api/quoc-gia/viet-nam?page=2', type: 'single' },
+    { url: 'https://phimapi.com/v1/api/quoc-gia/viet-nam?page=3', type: 'single' },
+    { url: 'https://phimapi.com/v1/api/danh-sach/phim-chieu-rap?page=1', type: 'single' },
+    { url: 'https://phimapi.com/v1/api/danh-sach/phim-chieu-rap?page=2', type: 'single' },
+    { url: 'https://phimapi.com/v1/api/danh-sach/phim-chieu-rap?page=3', type: 'single' },
+    { url: 'https://phimapi.com/v1/api/danh-sach/phim-chieu-rap?page=4', type: 'single' },
   ];
 
   for (const ep of kkEndpoints) {
     const data = await fetchJson(ep.url);
     const items = data?.data?.items || data?.items || [];
     console.log(`KKPhim [${ep.url.split('/').pop()}]: got ${items.length} items`);
+    for (const raw of items) {
+      const m = transformKKPhimItem(raw);
+      if (m && !movieMap.has(m.slug)) {
+        movieMap.set(m.slug, m);
+      }
+    }
+  }
+
+  // Fetch specific Vietnamese blockbusters
+  const specialKeywords = [
+    'lat-mat', 'nha-ba-nu', 'dat-rung-phuong-nam', 'quy-cau', 'ke-an-hon', 'hai-phuong', 'mat-biec', 'sieu-lua-gap-sieu-lay', 'gap-lai-chi-bau', 'lam-giau-voi-ma'
+  ];
+  for (const kw of specialKeywords) {
+    const data = await fetchJson(`https://phimapi.com/v1/api/tim-kiem?keyword=${kw}&limit=5`);
+    const items = data?.data?.items || [];
     for (const raw of items) {
       const m = transformKKPhimItem(raw);
       if (m && !movieMap.has(m.slug)) {

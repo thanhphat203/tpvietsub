@@ -14,6 +14,7 @@ import {
   Moon,
   Sun,
   ShieldCheck,
+  ShieldAlert,
   FastForward,
 } from 'lucide-react';
 import { Episode, Movie } from '../types';
@@ -40,7 +41,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onToggleCinemaMode,
   isLoadingEpisodes = false,
 }) => {
-  const [server, setServer] = useState<'vs' | 'tm'>('vs');
+  const [selectedServerId, setSelectedServerId] = useState<string>('');
+  const [blockedWarning, setBlockedWarning] = useState<boolean>(false);
   const [searchEp, setSearchEp] = useState('');
   const [activeChunk, setActiveChunk] = useState(0);
   const [watchedList, setWatchedList] = useState<string[]>([]);
@@ -69,6 +71,52 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return episodes[0];
   }, [episodes, currentTap]);
 
+  // Compute available servers for current activeEpisode
+  const availableServers = useMemo(() => {
+    if (!activeEpisode) return [];
+    if (activeEpisode.servers && activeEpisode.servers.length > 0) {
+      return activeEpisode.servers;
+    }
+    const defServers = [];
+    if (activeEpisode.vs || activeEpisode.m3u8 || activeEpisode.link_embed) {
+      defServers.push({
+        id: 'server_vs',
+        name: 'Server VIP 1',
+        url: activeEpisode.vs || activeEpisode.m3u8 || activeEpisode.link_embed || '',
+        m3u8: activeEpisode.m3u8,
+        isEmbed: !activeEpisode.m3u8,
+      });
+    }
+    if (activeEpisode.tm || activeEpisode.m3u8_tm) {
+      defServers.push({
+        id: 'server_tm',
+        name: 'Server Thuyết Minh',
+        url: activeEpisode.tm || activeEpisode.m3u8_tm || '',
+        m3u8: activeEpisode.m3u8_tm,
+        isEmbed: !activeEpisode.m3u8_tm,
+      });
+    }
+    return defServers;
+  }, [activeEpisode]);
+
+  // Active selected server
+  const currentServer = useMemo(() => {
+    if (availableServers.length === 0) return null;
+    if (selectedServerId) {
+      const found = availableServers.find((s) => s.id === selectedServerId);
+      if (found) return found;
+    }
+    // Prefer safe server (not containing kkphimplayer)
+    const safe = availableServers.find((s) => !s.url.includes('kkphimplayer'));
+    return safe || availableServers[0];
+  }, [availableServers, selectedServerId]);
+
+  // Reset selected server when episode changes
+  useEffect(() => {
+    setSelectedServerId('');
+    setBlockedWarning(false);
+  }, [activeEpisode?.tap]);
+
   // Sync watched list
   useEffect(() => {
     if (movie.slug) {
@@ -86,24 +134,20 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         title: movie.title,
         poster: movie.poster,
         episode: epTap,
-        server,
+        server: currentServer?.id || 'vip1',
       });
       setWatchedList(getWatchedEpisodes(movie.slug));
     }
-  }, [activeEpisode?.tap, movie.slug, server]);
+  }, [activeEpisode?.tap, movie.slug, currentServer?.id]);
 
   // Determine direct m3u8 stream vs embed URL
   const { activeM3u8, activeEmbed } = useMemo(() => {
-    if (!activeEpisode) return { activeM3u8: undefined, activeEmbed: undefined };
-    if (server === 'tm') {
-      const m3u8 = activeEpisode.m3u8_tm || (activeEpisode.tm?.includes('.m3u8') ? activeEpisode.tm : undefined);
-      const embed = activeEpisode.tm || activeEpisode.link_embed;
-      return { activeM3u8: m3u8, activeEmbed: embed };
-    }
-    const m3u8 = activeEpisode.m3u8 || (activeEpisode.vs?.includes('.m3u8') ? activeEpisode.vs : undefined);
-    const embed = activeEpisode.link_embed || activeEpisode.vs;
-    return { activeM3u8: m3u8, activeEmbed: embed };
-  }, [activeEpisode, server]);
+    if (!currentServer) return { activeM3u8: undefined, activeEmbed: undefined };
+    return {
+      activeM3u8: currentServer.m3u8,
+      activeEmbed: currentServer.url,
+    };
+  }, [currentServer]);
 
   // Setup Hls.js on native <video> when m3u8 is available
   useEffect(() => {
@@ -142,8 +186,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
-          // If native stream fails, gracefully switch to embed player
-          console.warn('HLS stream error, falling back to embed player:', data.type);
+          console.warn('HLS stream error:', data.type);
+          setBlockedWarning(true);
+          // Try switching to another server if available
+          if (availableServers.length > 1) {
+            const curIdx = availableServers.findIndex((s) => s.id === currentServer?.id);
+            const nextIdx = (curIdx + 1) % availableServers.length;
+            if (nextIdx !== curIdx) {
+              setSelectedServerId(availableServers[nextIdx].id);
+              return;
+            }
+          }
           setUseNativePlayer(false);
         }
       });
@@ -383,53 +436,71 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         )}
       </div>
 
+      {/* Antivirus & Network Advisory Notification */}
+      <div className="bg-[#181825] border border-amber-500/30 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-md">
+        <div className="flex items-center gap-2.5 text-amber-200">
+          <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
+          <p className="leading-relaxed">
+            <strong className="text-amber-300">Mẹo tránh bị chặn:</strong> Nếu trình duyệt hoặc phần mềm diệt virus (Avast, AVG, Malwarebytes) báo chặn đường truyền, bạn chỉ cần bấm chọn <strong>Server khác</strong> (Server VIP 1 / VIP 2 / VIP 3) ở thanh máy chủ bên dưới để xem mượt mà 100%!
+          </p>
+        </div>
+        {availableServers.length > 1 && (
+          <button
+            type="button"
+            onClick={() => {
+              const curIdx = availableServers.findIndex((s) => s.id === currentServer?.id);
+              const nextIdx = (curIdx + 1) % availableServers.length;
+              setIsSwitching(true);
+              setSelectedServerId(availableServers[nextIdx].id);
+              setUseNativePlayer(!!availableServers[nextIdx].m3u8);
+              setBlockedWarning(false);
+              setTimeout(() => setIsSwitching(false), 200);
+            }}
+            className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs shrink-0 transition-colors btn-3d shadow-lg"
+          >
+            Đổi Server Nhanh
+          </button>
+        )}
+      </div>
+
       {/* Control Bar: Server Switch, Skip Controls & Next/Prev */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#13131d] p-3.5 rounded-2xl border border-[#232336] shadow-xl">
         
-        {/* Server Selectors & Fast Skip Buttons */}
+        {/* Dynamic Server Selectors & Fast Skip Buttons */}
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-1">
             Server:
           </span>
-          <button
-            type="button"
-            onClick={() => {
-              if (server !== 'vs') {
-                setIsSwitching(true);
-                setServer('vs');
-                setUseNativePlayer(true);
-                setTimeout(() => setIsSwitching(false), 200);
-              }
-            }}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border btn-3d ${
-              server === 'vs'
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-lg shadow-emerald-950/70 scale-105'
-                : 'bg-[#181826] text-gray-300 border-[#28283c] hover:bg-[#222234] hover:text-white'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            Server Vietsub {activeM3u8 ? '(Không QC)' : ''}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (server !== 'tm') {
-                setIsSwitching(true);
-                setServer('tm');
-                setUseNativePlayer(true);
-                setTimeout(() => setIsSwitching(false), 200);
-              }
-            }}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border btn-3d ${
-              server === 'tm'
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-400 shadow-lg shadow-purple-950/70 scale-105'
-                : 'bg-[#181826] text-gray-300 border-[#28283c] hover:bg-[#222234] hover:text-white'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-purple-400" />
-            Server Thuyết Minh
-          </button>
+          {availableServers.map((srv, idx) => {
+            const isActive = currentServer?.id === srv.id;
+            return (
+              <button
+                key={srv.id}
+                type="button"
+                onClick={() => {
+                  if (currentServer?.id !== srv.id) {
+                    setIsSwitching(true);
+                    setSelectedServerId(srv.id);
+                    setUseNativePlayer(!!srv.m3u8);
+                    setBlockedWarning(false);
+                    setTimeout(() => setIsSwitching(false), 200);
+                  }
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border btn-3d ${
+                  isActive
+                    ? idx === 0
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-lg shadow-emerald-950/70 scale-105'
+                      : idx === 1
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400 shadow-lg shadow-blue-950/70 scale-105'
+                      : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-400 shadow-lg shadow-purple-950/70 scale-105'
+                    : 'bg-[#181826] text-gray-300 border-[#28283c] hover:bg-[#222234] hover:text-white'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-gray-500'}`} />
+                {srv.name} {srv.m3u8 ? '(HLS)' : ''}
+              </button>
+            );
+          })}
 
           {/* Quick Ad-Skip Buttons (Active when playing via native player) */}
           {activeM3u8 && useNativePlayer && (

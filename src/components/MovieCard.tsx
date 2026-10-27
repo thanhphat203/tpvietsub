@@ -15,7 +15,7 @@ interface MovieCardProps {
   aspectRatio?: 'poster' | 'wide';
 }
 
-export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
+export const MovieCard = React.memo<MovieCardProps>(({ movie }) => {
   const [bookmarked, setBookmarked] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
@@ -155,4 +155,4 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
 
     </div>
   );
-};
+});

@@ -16,6 +16,14 @@ export interface MoviePart {
   watchLinks: WatchLink[];
 }
 
+export interface EpisodeServer {
+  id: string;           // e.g. 'vip1', 'vip2', 'tm', 'vip3'
+  name: string;         // e.g. 'Server VIP 1 (NguonC)', 'Server VIP 2 (HLS)', 'Server Thuyết Minh'
+  url: string;          // stream or embed URL
+  m3u8?: string;        // direct m3u8 stream
+  isEmbed?: boolean;
+}
+
 export interface Episode {
   tap: string;          // e.g. "1", "2", "3", "SP1"
   vs?: string;          // e.g. "https://ssplay.net/v/961119259811110.html"
@@ -24,6 +32,7 @@ export interface Episode {
   m3u8_tm?: string;     // Direct m3u8 stream for Thuyết Minh
   link_embed?: string;  // Fallback player embed
   serverName?: string;
+  servers?: EpisodeServer[];
 }
 
 export interface AnisrcRawMovie {
