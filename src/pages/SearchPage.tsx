@@ -143,7 +143,7 @@ export const SearchPage: React.FC = () => {
           <div className="py-20 flex flex-col items-center justify-center space-y-3">
             <Loader2 className="w-10 h-10 text-red-500 animate-spin" />
             <p className="text-xs text-gray-400 font-bold tracking-wide">
-              Đang tra cứu từ máy chủ Anisrc...
+              Đang tra cứu dữ liệu phim...
             </p>
           </div>
         )}

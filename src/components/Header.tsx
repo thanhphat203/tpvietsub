@@ -22,18 +22,21 @@ export const Header: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isGenreOpen, setIsGenreOpen] = useState(false);
+  const [isCountryOpen, setIsCountryOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
   const searchRef = useRef<HTMLDivElement>(null);
   const genreRef = useRef<HTMLDivElement>(null);
+  const countryRef = useRef<HTMLDivElement>(null);
 
   // Close menus on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsSearchOpen(false);
     setIsGenreOpen(false);
+    setIsCountryOpen(false);
   }, [location.pathname, location.search]);
 
   // Live search debounced
@@ -71,6 +74,9 @@ export const Header: React.FC = () => {
       }
       if (genreRef.current && !genreRef.current.contains(event.target as Node)) {
         setIsGenreOpen(false);
+      }
+      if (countryRef.current && !countryRef.current.contains(event.target as Node)) {
+        setIsCountryOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -142,6 +148,40 @@ export const Header: React.FC = () => {
                       className="px-3 py-1.5 text-xs font-bold text-gray-300 hover:text-white hover:bg-red-600/20 hover:border-red-500/40 rounded-xl transition-all border border-transparent truncate"
                     >
                       {genre}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Quốc Gia Dropdown */}
+            <div className="relative" ref={countryRef}>
+              <button
+                type="button"
+                onClick={() => setIsCountryOpen(!isCountryOpen)}
+                className={`flex items-center gap-1 py-2 transition-all hover:text-[#e50914] ${
+                  location.search.includes('country=') ? 'text-[#e50914]' : ''
+                }`}
+              >
+                <span>Quốc Gia</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isCountryOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isCountryOpen && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-[#14141e] rounded-2xl shadow-2xl border border-[#262638] p-2.5 flex flex-col gap-1 z-50">
+                  {[
+                    { label: 'Phim Trung Quốc', value: 'Trung Quốc' },
+                    { label: 'Phim Hàn Quốc', value: 'Hàn Quốc' },
+                    { label: 'Phim Nhật Bản', value: 'Nhật Bản' },
+                    { label: 'Phim Âu Mỹ', value: 'Âu Mỹ' },
+                    { label: 'Phim Thái Lan', value: 'Thái Lan' },
+                  ].map((item) => (
+                    <Link
+                      key={item.value}
+                      to={`/kham-pha?country=${encodeURIComponent(item.value)}`}
+                      className="px-3 py-1.5 text-xs font-bold text-gray-300 hover:text-white hover:bg-red-600/20 hover:border-red-500/40 rounded-xl transition-all border border-transparent truncate"
+                    >
+                      {item.label}
                     </Link>
                   ))}
                 </div>
@@ -300,6 +340,28 @@ export const Header: React.FC = () => {
               <History className="w-4 h-4" />
               <span>Tủ Phim</span>
             </Link>
+          </div>
+
+          <div className="pt-2 border-t border-[#20202e] space-y-2">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
+              Quốc gia:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: 'Trung Quốc', val: 'Trung Quốc' },
+                { label: 'Hàn Quốc', val: 'Hàn Quốc' },
+                { label: 'Nhật Bản', val: 'Nhật Bản' },
+                { label: 'Âu Mỹ', val: 'Âu Mỹ' },
+              ].map((c) => (
+                <Link
+                  key={c.val}
+                  to={`/kham-pha?country=${encodeURIComponent(c.val)}`}
+                  className="px-2.5 py-1 bg-[#161622] text-gray-300 hover:text-white text-[11px] rounded-lg border border-[#252538]"
+                >
+                  {c.label}
+                </Link>
+              ))}
+            </div>
           </div>
 
           <div className="pt-2 border-t border-[#20202e] space-y-2">

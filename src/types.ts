@@ -119,13 +119,23 @@ export const SCHEDULE_DAYS = [
   { key: 'CN', label: 'Chủ Nhật', short: 'CN' },
 ] as const;
 
+export const ALL_COUNTRIES = [
+  'all',
+  'Trung Quốc',
+  'Hàn Quốc',
+  'Nhật Bản',
+  'Âu Mỹ',
+  'Thái Lan',
+] as const;
+
 export interface FilterOptions {
   type: MovieType;
   genre: string;
+  country?: string;
   year: string;
   status: 'all' | 'ongoing' | 'completed';
   schedule: string;
-  source?: 'all' | 'anisrc' | 'kkphim';
   sortBy: 'updated' | 'year_desc' | 'rating' | 'views' | 'title';
   page: number;
+  source?: 'all' | 'anisrc' | 'kkphim';
 }

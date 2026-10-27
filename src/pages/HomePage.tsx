@@ -1,12 +1,13 @@
 /**
  * @file src/pages/HomePage.tsx
- * Cinema-Grade Homepage Layout with Hero, Schedule, Categories, Multi-Source Switching, and Multi-Column Layout
+ * Cinema-Grade Homepage Layout with Unified Catalog, Category Quick Hub, Schedule & Top 10
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { HeroSlider } from '../components/HeroSlider';
 import { MovieRow } from '../components/MovieRow';
+import { MovieCard } from '../components/MovieCard';
 import { TopMoviesList } from '../components/TopMoviesList';
 import { ScheduleSection } from '../components/ScheduleSection';
 import { ContinueWatchingRow } from '../components/ContinueWatchingRow';
@@ -15,17 +16,20 @@ import {
   getAllMovies,
   getTopViewed,
   getAllAvailableGenres,
+  get3DAnimationMovies,
+  getAnimeMovies,
+  getActionMovies,
+  getChineseMovies,
+  getKoreanMovies,
   initializeMovies,
 } from '../../lib/movies';
-import {
-  Compass,
-  ChevronRight,
-  Database,
-} from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const [allMovies, setAllMovies] = useState(getAllMovies());
-  const [sourceFilter, setSourceFilter] = useState<'all' | 'kkphim' | 'anisrc'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<
+    'all' | '3d' | 'anime' | 'action' | 'china' | 'korea' | 'series' | 'single'
+  >('all');
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -36,65 +40,102 @@ export const HomePage: React.FC = () => {
     return () => window.removeEventListener('tp_movies_updated', handleUpdate);
   }, []);
 
-  // Filter movies based on selected API source
-  const sourceMovies = useMemo(() => {
-    if (sourceFilter === 'all') return allMovies;
-    return allMovies.filter((m) => m.source === sourceFilter);
-  }, [allMovies, sourceFilter]);
-
+  // Filtered lists by content category (Unified, 0 source branding)
   const hotMovies = useMemo(() => {
-    const hot = sourceMovies.filter((m) => m.isHot || m.views > 700000);
-    return hot.length > 0 ? hot.slice(0, 10) : sourceMovies.slice(0, 10);
-  }, [sourceMovies]);
+    const hot = allMovies.filter((m) => m.isHot || m.views > 700000);
+    return hot.length > 0 ? hot.slice(0, 10) : allMovies.slice(0, 10);
+  }, [allMovies]);
 
   const newMovies = useMemo(() => {
-    return [...sourceMovies]
+    return [...allMovies]
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .slice(0, 12);
-  }, [sourceMovies]);
+  }, [allMovies]);
 
   const topViewed = useMemo(() => {
-    return [...sourceMovies]
+    return [...allMovies]
       .sort((a, b) => b.views - a.views)
       .slice(0, 10);
-  }, [sourceMovies]);
+  }, [allMovies]);
 
   const seriesMovies = useMemo(() => {
-    return sourceMovies.filter((m) => m.type !== 'single').slice(0, 12);
-  }, [sourceMovies]);
+    return allMovies.filter((m) => m.type !== 'single').slice(0, 12);
+  }, [allMovies]);
 
   const singleMovies = useMemo(() => {
-    const singles = sourceMovies.filter((m) => m.type === 'single');
+    const singles = allMovies.filter((m) => m.type === 'single');
     if (singles.length > 0) return singles.slice(0, 12);
-    return sourceMovies
+    return allMovies
       .filter(
         (m) =>
           m.genres.some((g) => g.includes('Lẻ') || g.includes('Chiếu Rạp')) ||
           m.duration?.toLowerCase().includes('phút')
       )
       .slice(0, 12);
-  }, [sourceMovies]);
+  }, [allMovies]);
 
-  const genres = getAllAvailableGenres();
+  const donghua3DMovies = useMemo(() => {
+    return get3DAnimationMovies().slice(0, 12);
+  }, [allMovies]);
+
+  const animeMovies = useMemo(() => {
+    return getAnimeMovies().slice(0, 12);
+  }, [allMovies]);
+
+  const actionMovies = useMemo(() => {
+    return getActionMovies().slice(0, 12);
+  }, [allMovies]);
+
+  const chineseMovies = useMemo(() => {
+    return getChineseMovies().slice(0, 12);
+  }, [allMovies]);
+
+  const koreanMovies = useMemo(() => {
+    return getKoreanMovies().slice(0, 12);
+  }, [allMovies]);
 
   // Genre-specific highlights
   const tuTienMovies = useMemo(() => {
-    return sourceMovies
+    return allMovies
       .filter((m) => m.genres.some((g) => g.toLowerCase().includes('tu tiên') || g.toLowerCase().includes('võ hiệp')))
       .slice(0, 10);
-  }, [sourceMovies]);
+  }, [allMovies]);
 
   const luyenCapMovies = useMemo(() => {
-    return sourceMovies
-      .filter((m) => m.genres.some((g) => g.toLowerCase().includes('luyện cấp') || g.toLowerCase().includes('hành động')))
+    return allMovies
+      .filter((m) => m.genres.some((g) => g.toLowerCase().includes('luyện cấp') || g.toLowerCase().includes('tu chân')))
       .slice(0, 10);
-  }, [sourceMovies]);
+  }, [allMovies]);
 
   const huyenHuyenMovies = useMemo(() => {
-    return sourceMovies
+    return allMovies
       .filter((m) => m.genres.some((g) => g.toLowerCase().includes('huyền huyễn') || g.toLowerCase().includes('kỳ ảo')))
       .slice(0, 10);
-  }, [sourceMovies]);
+  }, [allMovies]);
+
+  const genres = getAllAvailableGenres();
+
+  // Dynamic category items when user clicks a specific category pill
+  const activeCategoryList = useMemo(() => {
+    switch (selectedCategory) {
+      case '3d':
+        return { title: 'Hoạt Hình 3D', movies: get3DAnimationMovies(), link: '/the-loai/Ho%E1%BA%A1t%20H%C3%ACnh' };
+      case 'anime':
+        return { title: 'Anime Tuyển Chọn', movies: getAnimeMovies(), link: '/the-loai/Anime' };
+      case 'action':
+        return { title: 'Phim Hành Động', movies: getActionMovies(), link: '/the-loai/H%C3%A0nh%20%C4%90%E1%BB%99ng' };
+      case 'china':
+        return { title: 'Phim Trung Quốc', movies: getChineseMovies(), link: '/kham-pha?country=Trung+Quốc' };
+      case 'korea':
+        return { title: 'Phim Hàn Quốc', movies: getKoreanMovies(), link: '/kham-pha?country=Hàn+Quốc' };
+      case 'series':
+        return { title: 'Phim Bộ Tuyển Chọn', movies: seriesMovies, link: '/phim-bo' };
+      case 'single':
+        return { title: 'Phim Lẻ Chiếu Rạp', movies: singleMovies, link: '/phim-le' };
+      default:
+        return null;
+    }
+  }, [selectedCategory, allMovies, seriesMovies, singleMovies]);
 
   return (
     <div className="min-h-screen bg-[#0f0f14] text-gray-100 pb-20">
@@ -105,31 +146,34 @@ export const HomePage: React.FC = () => {
       {/* Main Content Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-12">
         
-        {/* 2. Source Selector Tabs */}
+        {/* 2. Unified Category Quick Hub (No Source Names, Content Categories Only) */}
         <section className="bg-[#14141e] p-3.5 sm:p-4 rounded-2xl border border-[#242436] shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="border-l-4 border-[#e50914] pl-3 py-0.5">
-              <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">
-                NGUỒN DỮ LIỆU PHIM
-              </h3>
-              <p className="text-[11px] text-gray-400">
-                Tích hợp song song API KKPhim & Anisrc ZoPhim
-              </p>
-            </div>
+          <div className="border-l-4 border-[#e50914] pl-3 py-0.5">
+            <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">
+              DANH MỤC PHIM TỔNG HỢP
+            </h3>
+            <p className="text-[11px] text-gray-400">
+              Hoạt hình 3D, Anime, Phim hành động, Phim Trung, Phim Hàn...
+            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {[
-              { id: 'all', label: 'Tất Cả Nguồn (Đồng Bộ Song Song)' },
-              { id: 'kkphim', label: 'Nguồn KKPhim (HLS Direct)' },
-              { id: 'anisrc', label: 'Nguồn Anisrc (Donghua)' },
+              { id: 'all', label: 'Tất Cả Phim' },
+              { id: '3d', label: 'Hoạt Hình 3D' },
+              { id: 'anime', label: 'Anime Tuyển Chọn' },
+              { id: 'action', label: 'Phim Hành Động' },
+              { id: 'china', label: 'Phim Trung Quốc' },
+              { id: 'korea', label: 'Phim Hàn Quốc' },
+              { id: 'series', label: 'Phim Bộ' },
+              { id: 'single', label: 'Phim Lẻ' },
             ].map((tab) => {
-              const active = sourceFilter === tab.id;
+              const active = selectedCategory === tab.id;
               return (
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setSourceFilter(tab.id as any)}
+                  onClick={() => setSelectedCategory(tab.id as any)}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border btn-3d ${
                     active
                       ? 'bg-[#e50914] text-white border-red-500 shadow-md shadow-red-950/70'
@@ -146,7 +190,48 @@ export const HomePage: React.FC = () => {
         {/* 3. Continue Watching (if user has active history) */}
         <ContinueWatchingRow />
 
-        {/* 4. Quick Genre Matrix Pill Bar */}
+        {/* 4. Filtered Category Highlight Showcase (When a specific category pill is chosen) */}
+        {activeCategoryList && (
+          <section className="bg-[#14141e] p-5 sm:p-6 rounded-2xl border border-red-900/40 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#242436] pb-3">
+              <div className="border-l-4 border-[#e50914] pl-3 py-0.5">
+                <h2 className="text-lg sm:text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                  CHUYÊN MỤC: {activeCategoryList.title}
+                  <span className="text-xs font-mono font-bold bg-red-950/80 text-red-400 border border-red-800/60 px-2 py-0.5 rounded">
+                    {activeCategoryList.movies.length} BỘ PHIM
+                  </span>
+                </h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Danh sách tuyển chọn theo chuyên mục bạn vừa chọn
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory('all')}
+                  className="text-xs text-gray-400 hover:text-white px-3 py-1.5 rounded-xl bg-[#1b1b28] border border-[#28283a] transition-colors"
+                >
+                  Xem toàn bộ danh mục &times;
+                </button>
+                <Link
+                  to={activeCategoryList.link}
+                  className="text-xs text-red-400 hover:text-white font-bold flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-950/40 border border-red-800/40 transition-colors"
+                >
+                  Khám phá thêm &rarr;
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 pt-2">
+              {activeCategoryList.movies.slice(0, 18).map((movie) => (
+                <MovieCard key={movie.id} movie={movie} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 5. Quick Genre Matrix Pill Bar */}
         <section className="bg-[#14141e] p-4 sm:p-5 rounded-2xl border border-[#242436] shadow-lg">
           <div className="flex items-center justify-between gap-3 mb-3">
             <div className="border-l-4 border-[#e50914] pl-3 py-0.5">
@@ -169,7 +254,7 @@ export const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* 5. Section: Hot / Trending Movies */}
+        {/* 6. Section: Phim Thịnh Hành */}
         <MovieRow
           title="Phim Thịnh Hành"
           subtitle="Top tác phẩm thu hút lượt xem cao nhất trên hệ thống"
@@ -177,10 +262,10 @@ export const HomePage: React.FC = () => {
           moreLink="/bang-xep-hang"
         />
 
-        {/* 6. Section: Lịch Chiếu Trong Tuần (Weekly Air Schedule) */}
+        {/* 7. Section: Lịch Chiếu Trong Tuần (Weekly Air Schedule) */}
         <ScheduleSection movies={allMovies} />
 
-        {/* 7. Section: Mới Cập Nhật Tập Mới Nhất */}
+        {/* 8. Section: Mới Cập Nhật */}
         <MovieRow
           title="Mới Cập Nhật"
           subtitle="Tập phim vừa lên sóng vietsub & thuyết minh siêu nét"
@@ -188,12 +273,61 @@ export const HomePage: React.FC = () => {
           moreLink="/kham-pha?sort=updated"
         />
 
-        {/* 8. Phim Bộ vs Phim Lẻ Highlights */}
+        {/* 9. Section: Hoạt Hình 3D Trung Quốc (Donghua 3D) */}
+        {donghua3DMovies.length > 0 && (
+          <MovieRow
+            title="Hoạt Hình 3D Trung Quốc"
+            subtitle="Đồ họa 3D đỉnh cao, kỹ xảo mãn nhãn với những trận đại chiến kinh điển"
+            movies={donghua3DMovies}
+            moreLink="/the-loai/Tu%20Ti%C3%AAn"
+          />
+        )}
+
+        {/* 10. Section: Anime & Manga Tuyển Chọn */}
+        {animeMovies.length > 0 && (
+          <MovieRow
+            title="Anime & Hoạt Hình Tuyển Chọn"
+            subtitle="Thế giới kỳ ảo, chuyển sinh dị giới và hành trình phiêu lưu hấp dẫn"
+            movies={animeMovies}
+            moreLink="/the-loai/Ho%E1%BA%A1t%20H%C3%ACnh"
+          />
+        )}
+
+        {/* 11. Section: Phim Hành Động - Võ Thuật */}
+        {actionMovies.length > 0 && (
+          <MovieRow
+            title="Phim Hành Động - Võ Thuật"
+            subtitle="Những pha giao đấu nghẹt thở, đao quang kiếm ảnh mãn nhãn"
+            movies={actionMovies}
+            moreLink="/the-loai/H%C3%A0nh%20%C4%90%E1%BB%99ng"
+          />
+        )}
+
+        {/* 12. Section: Phim Hàn Quốc & Phim Trung Quốc Tuyển Chọn */}
+        {koreanMovies.length > 0 && (
+          <MovieRow
+            title="Phim Hàn Quốc Tuyển Chọn"
+            subtitle="Các bộ phim hấp dẫn từ xứ sở kim chi vietsub sắc nét"
+            movies={koreanMovies}
+            moreLink="/kham-pha?country=Hàn+Quốc"
+          />
+        )}
+
+        {chineseMovies.length > 0 && (
+          <MovieRow
+            title="Phim Trung Quốc Tuyển Chọn"
+            subtitle="Phim bộ, phim truyền hình và hoạt hình Trung Quốc đặc sắc"
+            movies={chineseMovies}
+            moreLink="/kham-pha?country=Trung+Quốc"
+          />
+        )}
+
+        {/* 13. Phim Bộ vs Phim Lẻ Highlights */}
         <div className="grid grid-cols-1 gap-12">
           {/* Phim Bộ */}
           <MovieRow
             title="Phim Bộ Tuyển Chọn"
-            subtitle="Các bộ phim dài tập với hành trình tu luyện kinh điển"
+            subtitle="Các bộ phim dài tập với hành trình tu luyện và cốt truyện kịch tính"
             movies={seriesMovies}
             moreLink="/phim-bo"
           />
@@ -209,7 +343,7 @@ export const HomePage: React.FC = () => {
           )}
         </div>
 
-        {/* 9. Main 2-Column Section: Genre Rows + Top 10 Sidebar */}
+        {/* 14. Main 2-Column Section: Genre Rows + Top 10 Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
           
           {/* Left Column (2 Cols): Categorized Rows */}
@@ -253,11 +387,11 @@ export const HomePage: React.FC = () => {
                   Bộ Lọc Toàn Diện
                 </h3>
                 <p className="text-xs text-gray-400 mt-1">
-                  Khám phá theo định dạng, thể loại, năm chiếu và nguồn API
+                  Khám phá theo định dạng, thể loại, quốc gia và năm phát hành
                 </p>
               </div>
               <p className="text-xs text-gray-300 leading-relaxed">
-                Hệ thống hỗ trợ tra cứu đa nguồn kết hợp công nghệ streaming HLS Direct không quảng cáo.
+                Hệ thống tổng hợp kho phim phong phú kết hợp công nghệ streaming trực tiếp mượt mà không quảng cáo.
               </p>
               <Link
                 to="/kham-pha"

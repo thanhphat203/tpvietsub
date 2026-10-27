@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
-import { ALL_GENRES, SCHEDULE_DAYS, FilterOptions } from '../types';
+import { ALL_GENRES, SCHEDULE_DAYS, ALL_COUNTRIES, FilterOptions } from '../types';
 
 interface FilterBarProps {
   filters: FilterOptions;
@@ -33,7 +33,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   };
 
   const hasActiveFilters =
-    (filters.source && filters.source !== 'all') ||
+    (filters.country && filters.country !== 'all') ||
     filters.type !== 'all' ||
     filters.genre !== 'all' ||
     filters.year !== 'all' ||
@@ -89,30 +89,26 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       {/* Filter Matrix Content */}
       <div className={`space-y-4 sm:block ${isExpanded ? 'block' : 'hidden'}`}>
         
-        {/* Row 0: Nguồn Dữ Liệu API (KKPhim vs Anisrc) */}
+        {/* Row 0: Quốc Gia */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-black text-gray-400 uppercase tracking-wider w-24 shrink-0">
-            Nguồn API:
+            Quốc gia:
           </span>
           <div className="flex flex-wrap gap-1.5">
-            {[
-              { id: 'all', label: 'Tất Cả Nguồn (Đồng Bộ)' },
-              { id: 'kkphim', label: 'KKPhim API (HLS Direct)' },
-              { id: 'anisrc', label: 'Anisrc / ZoPhim (Donghua)' },
-            ].map((item) => {
-              const active = (filters.source || 'all') === item.id;
+            {ALL_COUNTRIES.map((c) => {
+              const active = (filters.country || 'all') === c;
               return (
                 <button
-                  key={item.id}
+                  key={c}
                   type="button"
-                  onClick={() => updateField('source', item.id as any)}
+                  onClick={() => updateField('country', c)}
                   className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border btn-3d ${
                     active
                       ? 'bg-[#e50914] text-white border-red-500 shadow-md shadow-red-950/60'
                       : 'bg-[#1b1b28] text-gray-300 border-[#28283a] hover:bg-[#252538] hover:text-white'
                   }`}
                 >
-                  {item.label}
+                  {c === 'all' ? 'Tất Cả Quốc Gia' : c}
                 </button>
               );
             })}

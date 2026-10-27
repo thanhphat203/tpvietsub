@@ -140,6 +140,75 @@ export function getSingleMovies(): Movie[] {
 }
 
 /**
+ * Get movies by Country (e.g. 'Trung Quốc', 'Hàn Quốc', 'Nhật Bản')
+ */
+export function getMoviesByCountry(country: string): Movie[] {
+  if (!country || country === 'all') return getAllMovies();
+  const target = country.toLowerCase().trim();
+  return getAllMovies().filter((m) => m.country && m.country.toLowerCase().includes(target));
+}
+
+/**
+ * Get Hoạt Hình 3D (3D Donghua / Tiên hiệp / Huyền huyễn 3D)
+ */
+export function get3DAnimationMovies(): Movie[] {
+  return getAllMovies().filter((m) =>
+    m.genres.some(
+      (g) =>
+        g.toLowerCase().includes('3d') ||
+        g.toLowerCase().includes('tu tiên') ||
+        g.toLowerCase().includes('huyền huyễn') ||
+        g.toLowerCase().includes('luyện cấp')
+    )
+  );
+}
+
+/**
+ * Get Anime (Hoạt hình Nhật Bản / 2D / Chuyển sinh)
+ */
+export function getAnimeMovies(): Movie[] {
+  return getAllMovies().filter((m) =>
+    m.country?.toLowerCase().includes('nhật') ||
+    m.genres.some(
+      (g) =>
+        g.toLowerCase().includes('anime') ||
+        g.toLowerCase().includes('manga') ||
+        g.toLowerCase().includes('chuyển sinh') ||
+        g.toLowerCase().includes('học đường')
+    )
+  );
+}
+
+/**
+ * Get Phim Hành Động
+ */
+export function getActionMovies(): Movie[] {
+  return getAllMovies().filter((m) =>
+    m.genres.some(
+      (g) =>
+        g.toLowerCase().includes('hành động') ||
+        g.toLowerCase().includes('võ thuật') ||
+        g.toLowerCase().includes('chiến tranh') ||
+        g.toLowerCase().includes('hình sự')
+    )
+  );
+}
+
+/**
+ * Get Phim Trung Quốc
+ */
+export function getChineseMovies(): Movie[] {
+  return getAllMovies().filter((m) => m.country?.toLowerCase().includes('trung'));
+}
+
+/**
+ * Get Phim Hàn Quốc
+ */
+export function getKoreanMovies(): Movie[] {
+  return getAllMovies().filter((m) => m.country?.toLowerCase().includes('hàn'));
+}
+
+/**
  * Get movies by Air Schedule (e.g. T2, T3, CN)
  */
 export function getMoviesBySchedule(dayKey: string): Movie[] {

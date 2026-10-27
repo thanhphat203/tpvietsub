@@ -189,9 +189,28 @@ export function transformKKPhimMovie(item: any): Movie {
   const poster = getHdImageUrl(item.poster_url || item.thumb_url);
   const backdrop = getHdImageUrl(item.thumb_url || item.poster_url);
 
-  const genres = Array.isArray(item.category)
+  let country = 'Trung Quốc';
+  if (Array.isArray(item.country) && item.country.length > 0) {
+    country = item.country[0]?.name || item.country[0] || 'Trung Quốc';
+  } else if (typeof item.country === 'string' && item.country.trim()) {
+    country = item.country.trim();
+  }
+
+  const rawCategories = Array.isArray(item.category)
     ? item.category.map((c: any) => c.name || c).filter(Boolean)
-    : ['Hoạt Hình', 'Hành Động'];
+    : [];
+
+  const lowerName = (item.name + ' ' + (item.origin_name || '')).toLowerCase();
+  const genres = [...rawCategories];
+  if (item.type === 'hoathinh' || lowerName.includes('hoạt hình')) {
+    if (!genres.includes('Hoạt Hình')) genres.unshift('Hoạt Hình');
+    if (country === 'Trung Quốc' && !genres.includes('Hoạt Hình 3D')) {
+      genres.push('Hoạt Hình 3D');
+    }
+  }
+  if (lowerName.includes('tu tiên') && !genres.includes('Tu Tiên')) {
+    genres.push('Tu Tiên');
+  }
 
   const isSingle =
     item.type === 'single' ||
@@ -209,7 +228,7 @@ export function transformKKPhimMovie(item: any): Movie {
     backdrop,
     description: (item.content || item.description || 'Nội dung phim đang cập nhật.').replace(/<[^>]+>/g, '').trim(),
     genres: genres.length > 0 ? genres : ['Hoạt Hình'],
-    country: Array.isArray(item.country) ? item.country[0]?.name || 'Trung Quốc' : 'Trung Quốc',
+    country,
     year,
     status,
     episodeInfo: status,
@@ -322,6 +341,62 @@ export async function fetchKKPhimAnime(page = 1): Promise<Movie[]> {
     }
   } catch (err) {
     console.warn(`KKPhim anime fetch error page ${page}:`, err);
+  }
+
+  return [];
+}
+
+/**
+ * GET - Danh sách phim theo Thể Loại từ API
+ */
+export async function fetchKKPhimCategory(categorySlug: string, page = 1): Promise<Movie[]> {
+  const cacheKey = `category_${categorySlug}_page_${page}`;
+  const cached = memoryCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  try {
+    const targetUrl = `https://phimapi.com/v1/api/the-loai/${categorySlug}?page=${page}`;
+    const proxyPath = `/api/kkphim/v1/api/the-loai/${categorySlug}?page=${page}`;
+    const text = await fetchSafeText(targetUrl, proxyPath);
+    const json = JSON.parse(text);
+
+    if (json.data && Array.isArray(json.data.items)) {
+      const movies = json.data.items.map(transformKKPhimMovie);
+      memoryCache.set(cacheKey, { data: movies, timestamp: Date.now() });
+      return movies;
+    }
+  } catch (err) {
+    console.warn(`Category fetch error for ${categorySlug}:`, err);
+  }
+
+  return [];
+}
+
+/**
+ * GET - Danh sách phim theo Quốc Gia từ API
+ */
+export async function fetchKKPhimCountry(countrySlug: string, page = 1): Promise<Movie[]> {
+  const cacheKey = `country_${countrySlug}_page_${page}`;
+  const cached = memoryCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  try {
+    const targetUrl = `https://phimapi.com/v1/api/quoc-gia/${countrySlug}?page=${page}`;
+    const proxyPath = `/api/kkphim/v1/api/quoc-gia/${countrySlug}?page=${page}`;
+    const text = await fetchSafeText(targetUrl, proxyPath);
+    const json = JSON.parse(text);
+
+    if (json.data && Array.isArray(json.data.items)) {
+      const movies = json.data.items.map(transformKKPhimMovie);
+      memoryCache.set(cacheKey, { data: movies, timestamp: Date.now() });
+      return movies;
+    }
+  } catch (err) {
+    console.warn(`Country fetch error for ${countrySlug}:`, err);
   }
 
   return [];
@@ -670,6 +745,8 @@ export async function fetchAggregatedMovies(maxPages = 3): Promise<Movie[]> {
   // KKPhim updates & Anime
   promises.push(fetchKKPhimUpdates(1));
   promises.push(fetchKKPhimAnime(1));
+  promises.push(fetchKKPhimCategory('hanh-dong', 1));
+  promises.push(fetchKKPhimCountry('han-quoc', 1));
 
   const results = await Promise.all(promises);
   const combined = results.flat();

@@ -19,7 +19,7 @@ export const ExplorePage: React.FC = () => {
 
   // Initialize filters from query params or defaults
   const [filters, setFilters] = useState<FilterOptions>({
-    source: (searchParams.get('source') as any) || 'all',
+    country: searchParams.get('country') || 'all',
     type: (searchParams.get('type') as any) || 'all',
     genre: searchParams.get('genre') || 'all',
     year: searchParams.get('year') || 'all',
@@ -43,7 +43,7 @@ export const ExplorePage: React.FC = () => {
   const handleFilterChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
     const params: Record<string, string> = {};
-    if (newFilters.source && newFilters.source !== 'all') params.source = newFilters.source;
+    if (newFilters.country && newFilters.country !== 'all') params.country = newFilters.country;
     if (newFilters.type !== 'all') params.type = newFilters.type;
     if (newFilters.genre !== 'all') params.genre = newFilters.genre;
     if (newFilters.year !== 'all') params.year = newFilters.year;
@@ -57,7 +57,7 @@ export const ExplorePage: React.FC = () => {
 
   const handleReset = () => {
     handleFilterChange({
-      source: 'all',
+      country: 'all',
       type: 'all',
       genre: 'all',
       year: 'all',
@@ -72,9 +72,10 @@ export const ExplorePage: React.FC = () => {
   const filteredMovies = useMemo(() => {
     let result = [...allMovies];
 
-    // Filter by API source
-    if (filters.source && filters.source !== 'all') {
-      result = result.filter((m) => m.source === filters.source);
+    // Filter by Country
+    if (filters.country && filters.country !== 'all') {
+      const cTarget = filters.country.toLowerCase();
+      result = result.filter((m) => m.country && m.country.toLowerCase().includes(cTarget));
     }
 
     // Filter by type
@@ -152,7 +153,7 @@ export const ExplorePage: React.FC = () => {
               KHÁM PHÁ & LỌC PHIM TOÀN DIỆN
             </h1>
             <p className="text-xs text-gray-400 mt-1">
-              Kho phim đa nguồn API tích hợp chất lượng cao Full HD / 4K Vietsub + Thuyết Minh
+              Kho phim trực tuyến chất lượng cao Full HD / 4K Vietsub + Thuyết Minh
             </p>
           </div>
         </div>
