@@ -25,13 +25,14 @@ import {
   getSeriesMovies,
   initializeMovies,
 } from '../../lib/movies';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Sparkles, ChevronDown } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const [allMovies, setAllMovies] = useState(getAllMovies());
   const [selectedCategory, setSelectedCategory] = useState<
     'all' | '3d' | 'anime' | 'action' | 'china' | 'korea' | 'series' | 'single'
   >('all');
+  const [categoryVisibleCount, setCategoryVisibleCount] = useState<number>(24);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -45,13 +46,13 @@ export const HomePage: React.FC = () => {
   // Filtered lists by content category (Unified, 0 source branding)
   const hotMovies = useMemo(() => {
     const hot = allMovies.filter((m) => m.isHot || m.views > 700000);
-    return hot.length > 0 ? hot.slice(0, 10) : allMovies.slice(0, 10);
+    return hot.length > 0 ? hot.slice(0, 16) : allMovies.slice(0, 16);
   }, [allMovies]);
 
   const newMovies = useMemo(() => {
     return [...allMovies]
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, 12);
+      .slice(0, 24);
   }, [allMovies]);
 
   const topViewed = useMemo(() => {
@@ -61,50 +62,50 @@ export const HomePage: React.FC = () => {
   }, [allMovies]);
 
   const seriesMovies = useMemo(() => {
-    return getSeriesMovies().slice(0, 12);
+    return getSeriesMovies().slice(0, 24);
   }, [allMovies]);
 
   const singleMovies = useMemo(() => {
-    return getSingleMovies().slice(0, 12);
+    return getSingleMovies().slice(0, 24);
   }, [allMovies]);
 
   const donghua3DMovies = useMemo(() => {
-    return get3DAnimationMovies().slice(0, 12);
+    return get3DAnimationMovies().slice(0, 24);
   }, [allMovies]);
 
   const animeMovies = useMemo(() => {
-    return getAnimeMovies().slice(0, 12);
+    return getAnimeMovies().slice(0, 24);
   }, [allMovies]);
 
   const actionMovies = useMemo(() => {
-    return getActionMovies().slice(0, 12);
+    return getActionMovies().slice(0, 24);
   }, [allMovies]);
 
   const chineseMovies = useMemo(() => {
-    return getChineseMovies().slice(0, 12);
+    return getChineseMovies().slice(0, 24);
   }, [allMovies]);
 
   const koreanMovies = useMemo(() => {
-    return getKoreanMovies().slice(0, 12);
+    return getKoreanMovies().slice(0, 24);
   }, [allMovies]);
 
   // Genre-specific highlights
   const tuTienMovies = useMemo(() => {
     return allMovies
       .filter((m) => m.genres.some((g) => g.toLowerCase().includes('tu tiên') || g.toLowerCase().includes('võ hiệp')))
-      .slice(0, 10);
+      .slice(0, 16);
   }, [allMovies]);
 
   const luyenCapMovies = useMemo(() => {
     return allMovies
       .filter((m) => m.genres.some((g) => g.toLowerCase().includes('luyện cấp') || g.toLowerCase().includes('tu chân')))
-      .slice(0, 10);
+      .slice(0, 16);
   }, [allMovies]);
 
   const huyenHuyenMovies = useMemo(() => {
     return allMovies
       .filter((m) => m.genres.some((g) => g.toLowerCase().includes('huyền huyễn') || g.toLowerCase().includes('kỳ ảo')))
-      .slice(0, 10);
+      .slice(0, 16);
   }, [allMovies]);
 
   const genres = getAllAvailableGenres();
@@ -167,7 +168,10 @@ export const HomePage: React.FC = () => {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setSelectedCategory(tab.id as any)}
+                  onClick={() => {
+                    setSelectedCategory(tab.id as any);
+                    setCategoryVisibleCount(24);
+                  }}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border btn-3d ${
                     active
                       ? 'bg-[#e50914] text-white border-red-500 shadow-md shadow-red-950/70'
@@ -218,10 +222,24 @@ export const HomePage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 pt-2">
-              {activeCategoryList.movies.slice(0, 18).map((movie) => (
+              {activeCategoryList.movies.slice(0, categoryVisibleCount).map((movie) => (
                 <MovieCard key={movie.id} movie={movie} />
               ))}
             </div>
+
+            {activeCategoryList.movies.length > categoryVisibleCount && (
+              <div className="flex justify-center pt-4">
+                <button
+                  type="button"
+                  onClick={() => setCategoryVisibleCount((c) => c + 24)}
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 border border-red-500 shadow-xl shadow-red-950/60 btn-3d transition-all hover:scale-105"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Xem Thêm 24 Phim ({activeCategoryList.movies.length - categoryVisibleCount} Phim Còn Lại)
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </section>
         )}
 

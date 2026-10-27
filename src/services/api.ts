@@ -251,6 +251,142 @@ export function transformKKPhimMovie(item: any): Movie {
 }
 
 /**
+ * Convert NguonC raw item to Movie model
+ */
+export function transformNguonCMovie(
+  item: any,
+  defaultType: 'single' | 'series' = 'series',
+  defaultGenre = 'Phim Tuyển Chọn'
+): Movie {
+  const slug = item.slug || 'phim';
+  const hash = hashString(slug + (item.name || ''));
+  const rating = Number((8.3 + (hash % 16) / 10).toFixed(1));
+  const views = 85000 + (hash % 1750000);
+  const year = parseInt(item.year) || 2024;
+
+  const poster = getHdImageUrl(item.poster_url || item.thumb_url);
+  const backdrop = getHdImageUrl(item.thumb_url || item.poster_url);
+
+  const isSingle =
+    defaultType === 'single' ||
+    item.total_episodes === 1 ||
+    String(item.current_episode || '').toLowerCase().includes('full');
+
+  const genres = [defaultGenre];
+  const lower = (item.name + ' ' + (item.original_name || '') + ' ' + (item.description || '')).toLowerCase();
+
+  let country = 'Trung Quốc';
+  if (lower.includes('nhật bản') || lower.includes('anime') || lower.includes('manga')) {
+    country = 'Nhật Bản';
+    genres.push('Anime');
+  } else if (lower.includes('hàn quốc') || lower.includes('korea')) {
+    country = 'Hàn Quốc';
+  } else if (lower.includes('mỹ') || lower.includes('hollywood') || lower.includes('âu mỹ')) {
+    country = 'Âu Mỹ';
+    genres.push('Hành Động');
+  }
+
+  if (lower.includes('tu tiên') || lower.includes('huyền huyễn')) {
+    genres.push('Tu Tiên');
+    genres.push('Hoạt Hình 3D');
+  }
+  if (lower.includes('hành động') || lower.includes('võ thuật')) {
+    genres.push('Hành Động');
+  }
+  if (isSingle && !genres.includes('Chiếu Rạp')) {
+    genres.push('Chiếu Rạp');
+  }
+
+  const status = item.current_episode || (isSingle ? 'Full' : `Tập ${item.total_episodes || '1'}`);
+
+  return {
+    id: slug,
+    slug,
+    title: item.name || 'Chưa Đặt Tên',
+    titleOriginal: item.original_name || '',
+    poster,
+    backdrop,
+    description: (item.description || 'Nội dung phim đang cập nhật.').replace(/<[^>]+>/g, '').trim(),
+    genres: Array.from(new Set(genres)),
+    country,
+    year,
+    status,
+    episodeInfo: status,
+    duration: item.time || (isSingle ? 'Bản Đầy Đủ' : `${item.total_episodes || 'Nhiều'} Tập`),
+    rating,
+    views,
+    updatedAt: item.modified ? item.modified.split('T')[0] : new Date().toISOString().split('T')[0],
+    isHot: views > 800000,
+    isNew: year >= 2024,
+    type: isSingle ? 'single' : 'series',
+    airSchedule: '',
+    tmdbId: item.tmdb?.id ? String(item.tmdb.id) : '',
+    source: 'nguonc',
+    watchLinks: [],
+    episodes: [],
+  };
+}
+
+/**
+ * Convert Phim4K (VSMOV) raw item to Movie model
+ */
+export function transformPhim4KMovie(
+  item: any,
+  defaultType: 'single' | 'series' = 'single',
+  defaultGenre = 'Phim Tuyển Chọn'
+): Movie {
+  const slug = item.slug || 'phim';
+  const hash = hashString(slug + (item.name || ''));
+  const rating = Number((8.5 + (hash % 14) / 10).toFixed(1));
+  const views = 110000 + (hash % 1900000);
+  const year = parseInt(item.year) || 2024;
+
+  const poster = getHdImageUrl(item.poster_url || item.thumb_url);
+  const backdrop = getHdImageUrl(item.thumb_url || item.poster_url);
+
+  const genres = [defaultGenre, '4K Ultra HD'];
+  const lower = (item.name + ' ' + (item.origin_name || '')).toLowerCase();
+
+  let country = 'Âu Mỹ';
+  if (lower.includes('hàn quốc')) country = 'Hàn Quốc';
+  else if (lower.includes('trung quốc')) country = 'Trung Quốc';
+  else if (lower.includes('nhật bản') || lower.includes('anime')) {
+    country = 'Nhật Bản';
+    genres.push('Anime');
+  }
+
+  const isSingle = defaultType === 'single';
+  if (isSingle) genres.push('Chiếu Rạp');
+
+  return {
+    id: slug,
+    slug,
+    title: item.name || 'Chưa Đặt Tên',
+    titleOriginal: item.origin_name || '',
+    poster,
+    backdrop,
+    description: 'Bản phim chuẩn 4K Ultra HD sắc nét, âm thanh sống động.',
+    genres: Array.from(new Set(genres)),
+    country,
+    year,
+    status: isSingle ? '4K Full' : '4K Vietsub',
+    episodeInfo: isSingle ? '4K Full' : '4K Vietsub',
+    duration: isSingle ? 'Bản Đầy Đủ' : 'Nhiều Tập',
+    rating,
+    views,
+    updatedAt: item.modified?.time ? item.modified.time.split('T')[0] : new Date().toISOString().split('T')[0],
+    isHot: views > 850000,
+    isNew: year >= 2024,
+    type: isSingle ? 'single' : 'series',
+    airSchedule: '',
+    tmdbId: item.tmdb?.id ? String(item.tmdb.id) : '',
+    source: 'phim4k',
+    watchLinks: [],
+    episodes: [],
+  };
+}
+
+/**
  * Get initial seed movies (100% real unified catalog, 0 broken images, full coverage)
  */
 export function getSeedMovies(): Movie[] {
@@ -434,6 +570,69 @@ export async function fetchKKPhimList(listSlug: string, page = 1): Promise<Movie
 }
 
 /**
+ * GET - NguonC danh sách phim (phim-moi-cap-nhat, danh-sach/phim-le, danh-sach/phim-bo, danh-sach/hoat-hinh)
+ */
+export async function fetchNguonCList(catalogPath: string, page = 1): Promise<Movie[]> {
+  const cacheKey = `nguonc_${catalogPath}_${page}`;
+  const cached = memoryCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  try {
+    const targetUrl = `https://phim.nguonc.com/api/films/${catalogPath}?page=${page}`;
+    const proxyPath = `/api/nguonc/api/films/${catalogPath}?page=${page}`;
+    const text = await fetchSafeText(targetUrl, proxyPath);
+    const json = JSON.parse(text);
+
+    if (json.status === 'success' && Array.isArray(json.items)) {
+      const isSingle = catalogPath.includes('phim-le');
+      const defaultGenre = catalogPath.includes('hoat-hinh') ? 'Hoạt Hình' : isSingle ? 'Chiếu Rạp' : 'Phim Bộ';
+      const movies = json.items.map((it: any) =>
+        transformNguonCMovie(it, isSingle ? 'single' : 'series', defaultGenre)
+      );
+      memoryCache.set(cacheKey, { data: movies, timestamp: Date.now() });
+      return movies;
+    }
+  } catch (err) {
+    console.warn(`NguonC list error for ${catalogPath}:`, err);
+  }
+  return [];
+}
+
+/**
+ * GET - Phim4K danh sách phim (danh-sach/phim-le, danh-sach/phim-bo, danh-sach/hoat-hinh)
+ */
+export async function fetchPhim4KList(catalogPath: string, page = 1): Promise<Movie[]> {
+  const cacheKey = `phim4k_${catalogPath}_${page}`;
+  const cached = memoryCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  try {
+    const targetUrl = `https://vsmov.com/api/${catalogPath}?page=${page}&limit=24`;
+    const proxyPath = `/api/phim4k/api/${catalogPath}?page=${page}&limit=24`;
+    const text = await fetchSafeText(targetUrl, proxyPath);
+    const json = JSON.parse(text);
+
+    const items = json.data?.items || json.items;
+    if (Array.isArray(items)) {
+      const isSingle = catalogPath.includes('phim-le');
+      const defaultGenre = catalogPath.includes('hoat-hinh') ? 'Hoạt Hình' : isSingle ? 'Chiếu Rạp' : 'Phim Bộ';
+      const movies = items.map((it: any) =>
+        transformPhim4KItem(it, isSingle ? 'single' : 'series', defaultGenre)
+      );
+      memoryCache.set(cacheKey, { data: movies, timestamp: Date.now() });
+      return movies;
+    }
+  } catch (err) {
+    console.warn(`Phim4K list error for ${catalogPath}:`, err);
+  }
+  return [];
+}
+
+/**
  * GET - Anisrc Danh sách phim mới cập nhật
  */
 export async function fetchLatestUpdates(page = 1): Promise<Movie[]> {
@@ -512,9 +711,49 @@ export async function searchMoviesApi(keyword: string, page = 1): Promise<Movie[
     return [];
   };
 
+  // Search NguonC
+  const searchNguonC = async (): Promise<Movie[]> => {
+    try {
+      const encoded = encodeURIComponent(trimmedKey);
+      const targetUrl = `https://phim.nguonc.com/api/films/search?keyword=${encoded}&page=1`;
+      const proxyPath = `/api/nguonc/api/films/search?keyword=${encoded}&page=1`;
+      const text = await fetchSafeText(targetUrl, proxyPath);
+      const json = JSON.parse(text);
+      if (json.status === 'success' && Array.isArray(json.items)) {
+        return json.items.map((it: any) => transformNguonCMovie(it));
+      }
+    } catch {
+      // fallback
+    }
+    return [];
+  };
+
+  // Search Phim4K
+  const searchPhim4K = async (): Promise<Movie[]> => {
+    try {
+      const encoded = encodeURIComponent(trimmedKey);
+      const targetUrl = `https://vsmov.com/api/tim-kiem?keyword=${encoded}&page=1`;
+      const proxyPath = `/api/phim4k/api/tim-kiem?keyword=${encoded}&page=1`;
+      const text = await fetchSafeText(targetUrl, proxyPath);
+      const json = JSON.parse(text);
+      const items = json.data?.items || json.items;
+      if (Array.isArray(items)) {
+        return items.map((it: any) => transformPhim4KMovie(it));
+      }
+    } catch {
+      // fallback
+    }
+    return [];
+  };
+
   try {
-    const [anisrcResults, kkResults] = await Promise.all([searchAnisrc(), searchKKPhim()]);
-    const merged = [...anisrcResults, ...kkResults];
+    const [anisrcResults, kkResults, ncResults, p4kResults] = await Promise.all([
+      searchAnisrc(),
+      searchKKPhim(),
+      searchNguonC(),
+      searchPhim4K(),
+    ]);
+    const merged = [...anisrcResults, ...kkResults, ...ncResults, ...p4kResults];
 
     // Deduplicate by slug
     const seen = new Set<string>();
@@ -618,6 +857,70 @@ function parseEpisodesFromKKPhim(data: any): Episode[] {
 }
 
 /**
+ * Parse episodes from NguonC API response
+ */
+function parseEpisodesFromNguonC(data: any): Episode[] {
+  const episodesMap = new Map<string, Episode>();
+  const movie = data.movie || data;
+  if (movie && Array.isArray(movie.episodes)) {
+    for (const server of movie.episodes) {
+      const sName = (server.server_name || '').toLowerCase();
+      const isTm = sName.includes('thuyết minh') || sName.includes('thuyet minh');
+      for (const ep of server.items || server.server_data || []) {
+        const rawName = ep.name || ep.slug || '';
+        const numMatch = rawName.match(/\d+/);
+        const tap = numMatch ? String(parseInt(numMatch[0], 10)) : rawName.trim();
+        const existing = episodesMap.get(tap) || { tap };
+        const streamUrl = ep.m3u8 || ep.embed;
+        if (isTm) {
+          existing.tm = streamUrl;
+          if (ep.m3u8) existing.m3u8_tm = ep.m3u8;
+        } else {
+          existing.vs = streamUrl;
+          if (ep.m3u8) existing.m3u8 = ep.m3u8;
+        }
+        existing.link_embed = existing.link_embed || ep.embed || ep.link_embed;
+        episodesMap.set(tap, existing);
+      }
+    }
+  }
+  return Array.from(episodesMap.values()).sort(
+    (a, b) => (parseInt(a.tap, 10) || 0) - (parseInt(b.tap, 10) || 0)
+  );
+}
+
+/**
+ * Parse episodes from Phim4K (VSMOV) API response
+ */
+function parseEpisodesFromPhim4K(data: any): Episode[] {
+  const episodesMap = new Map<string, Episode>();
+  const eps = data.episodes || data.data?.episodes || [];
+  for (const server of eps) {
+    const sName = (server.server_name || '').toLowerCase();
+    const isTm = sName.includes('thuyết minh') || sName.includes('thuyet minh');
+    for (const ep of server.server_data || server.items || []) {
+      const rawName = ep.name || ep.slug || '';
+      const numMatch = rawName.match(/\d+/);
+      const tap = numMatch ? String(parseInt(numMatch[0], 10)) : rawName.trim();
+      const existing = episodesMap.get(tap) || { tap };
+      const streamUrl = ep.link_m3u8 || ep.link_embed || ep.embed;
+      if (isTm) {
+        existing.tm = streamUrl;
+        if (ep.link_m3u8) existing.m3u8_tm = ep.link_m3u8;
+      } else {
+        existing.vs = streamUrl;
+        if (ep.link_m3u8) existing.m3u8 = ep.link_m3u8;
+      }
+      existing.link_embed = existing.link_embed || ep.link_embed || ep.embed;
+      episodesMap.set(tap, existing);
+    }
+  }
+  return Array.from(episodesMap.values()).sort(
+    (a, b) => (parseInt(a.tap, 10) || 0) - (parseInt(b.tap, 10) || 0)
+  );
+}
+
+/**
  * GET - Danh sách tập theo phim
  * Fast Parallel Race: KKPhim (with Direct m3u8!) + Blogspot + Anisrc
  */
@@ -681,9 +984,41 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
     throw new Error('Invalid anisrc episode list');
   };
 
+  // Method D: Query NguonC
+  const fetchNguonC = async (): Promise<Episode[]> => {
+    const targetUrl = `https://phim.nguonc.com/api/film/${cleanSlug}`;
+    const proxyPath = `/api/nguonc/api/film/${cleanSlug}`;
+    const text = await fetchSafeText(targetUrl, proxyPath);
+    const json = JSON.parse(text);
+    if (json.status === 'success' && json.movie) {
+      const episodes = parseEpisodesFromNguonC(json);
+      if (episodes.length > 0) return episodes;
+    }
+    throw new Error('NguonC returned no episodes');
+  };
+
+  // Method E: Query Phim4K
+  const fetchPhim4K = async (): Promise<Episode[]> => {
+    const targetUrl = `https://vsmov.com/api/phim/${cleanSlug}`;
+    const proxyPath = `/api/phim4k/api/phim/${cleanSlug}`;
+    const text = await fetchSafeText(targetUrl, proxyPath);
+    const json = JSON.parse(text);
+    if (json) {
+      const episodes = parseEpisodesFromPhim4K(json);
+      if (episodes.length > 0) return episodes;
+    }
+    throw new Error('Phim4K returned no episodes');
+  };
+
   try {
-    // Parallel Race: Prefer KKPhim (clean m3u8) or Blogspot
-    const episodes = await Promise.any([fetchKKPhim(), fetchBlogspot(), fetchAnisrc()]);
+    // Parallel Race across all 5 providers (First to respond with valid episodes wins!)
+    const episodes = await Promise.any([
+      fetchKKPhim(),
+      fetchNguonC(),
+      fetchPhim4K(),
+      fetchBlogspot(),
+      fetchAnisrc(),
+    ]);
 
     if (episodes && episodes.length > 0) {
       memoryCache.set(memoryKey, { data: episodes, timestamp: Date.now() });
@@ -743,6 +1078,43 @@ export async function fetchMovieDetail(slug: string): Promise<Movie | undefined>
     }
   }
 
+  // If not found, try NguonC
+  if (!movie) {
+    try {
+      const targetUrl = `https://phim.nguonc.com/api/film/${decoded}`;
+      const proxyPath = `/api/nguonc/api/film/${decoded}`;
+      const text = await fetchSafeText(targetUrl, proxyPath);
+      const json = JSON.parse(text);
+      if (json.status === 'success' && json.movie) {
+        movie = transformNguonCMovie(json.movie);
+        if (json.movie.episodes) {
+          movie.episodes = parseEpisodesFromNguonC(json);
+        }
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  // If not found, try Phim4K
+  if (!movie) {
+    try {
+      const targetUrl = `https://vsmov.com/api/phim/${decoded}`;
+      const proxyPath = `/api/phim4k/api/phim/${decoded}`;
+      const text = await fetchSafeText(targetUrl, proxyPath);
+      const json = JSON.parse(text);
+      const rawM = json?.movie || json?.data?.movie;
+      if (rawM) {
+        movie = transformPhim4KMovie(rawM);
+        if (json.episodes || json.data?.episodes) {
+          movie.episodes = parseEpisodesFromPhim4K(json);
+        }
+      }
+    } catch {
+      // fallback
+    }
+  }
+
   if (!movie) {
     const results = await searchMoviesApi(decoded, 1);
     movie = results.find((m) => m.slug.toLowerCase() === decoded) || results[0];
@@ -763,7 +1135,7 @@ export async function fetchMovieDetail(slug: string): Promise<Movie | undefined>
 }
 
 /**
- * Preload and aggregate real movies from BOTH Anisrc and KKPhim
+ * Preload and aggregate real movies from ALL Providers (KKPhim + NguonC + Phim4K + Anisrc)
  */
 export async function fetchAggregatedMovies(maxPages = 3): Promise<Movie[]> {
   const promises: Promise<Movie[]>[] = [];
@@ -781,6 +1153,16 @@ export async function fetchAggregatedMovies(maxPages = 3): Promise<Movie[]> {
   promises.push(fetchKKPhimCountry('au-my', 1));
   promises.push(fetchKKPhimCountry('nhat-ban', 1));
   promises.push(fetchKKPhimCountry('han-quoc', 1));
+
+  // NguonC updates & Categories
+  promises.push(fetchNguonCList('phim-moi-cap-nhat', 1));
+  promises.push(fetchNguonCList('danh-sach/phim-le', 1));
+  promises.push(fetchNguonCList('danh-sach/phim-bo', 1));
+  promises.push(fetchNguonCList('danh-sach/hoat-hinh', 1));
+
+  // Phim4K updates & Categories
+  promises.push(fetchPhim4KList('danh-sach/phim-le', 1));
+  promises.push(fetchPhim4KList('danh-sach/phim-bo', 1));
 
   const results = await Promise.all(promises);
   const combined = results.flat();

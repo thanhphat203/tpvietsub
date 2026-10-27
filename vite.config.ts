@@ -45,6 +45,18 @@ export default defineConfig(() => {
           secure: false,
           rewrite: (p) => p.replace(/^\/api\/kkphim/, ''),
         },
+        '/api/nguonc': {
+          target: 'https://phim.nguonc.com',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (p) => p.replace(/^\/api\/nguonc/, ''),
+        },
+        '/api/phim4k': {
+          target: 'https://vsmov.com',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (p) => p.replace(/^\/api\/phim4k/, ''),
+        },
       },
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},

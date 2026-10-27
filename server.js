@@ -84,6 +84,46 @@ app.get('/api/zophim/*', async (req, res) => {
   }
 });
 
+// Proxy for NguonC (phim.nguonc.com)
+app.get('/api/nguonc/*', async (req, res) => {
+  try {
+    const targetPath = req.params[0];
+    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    const targetUrl = `https://phim.nguonc.com/${targetPath}${queryString}`;
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+    const data = await response.text();
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.status(response.status).send(data);
+  } catch (error) {
+    console.error('NguonC proxy error:', error);
+    res.status(500).json({ error: 'Proxy failed to fetch from NguonC' });
+  }
+});
+
+// Proxy for Phim4K (vsmov.com)
+app.get('/api/phim4k/*', async (req, res) => {
+  try {
+    const targetPath = req.params[0];
+    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    const targetUrl = `https://vsmov.com/${targetPath}${queryString}`;
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+    const data = await response.text();
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.status(response.status).send(data);
+  } catch (error) {
+    console.error('Phim4K proxy error:', error);
+    res.status(500).json({ error: 'Proxy failed to fetch from Phim4K' });
+  }
+});
+
 // Serve Vite build output
 app.use(express.static(path.join(__dirname, 'dist')));
 

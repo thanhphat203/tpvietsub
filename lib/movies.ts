@@ -6,7 +6,7 @@
 import { Movie, ALL_GENRES } from '../src/types';
 import { getCachedLocalMovies, fetchAggregatedMovies } from '../src/services/api';
 
-const STORAGE_KEY = 'tp_vietsub_movies_data_v3';
+const STORAGE_KEY = 'tp_vietsub_movies_data_v4';
 
 let inMemoryMovies: Movie[] = getCachedLocalMovies();
 
