@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { X, Flame, Play, Star, ChevronUp } from 'lucide-react';
 import { Movie } from '../types';
+import { getHdImageUrl } from '../services/api';
 
 interface HotMoviesPopupProps {
   movies: Movie[];
@@ -94,9 +95,14 @@ export const HotMoviesPopup: React.FC<HotMoviesPopupProps> = ({ movies }) => {
             className="flex items-center gap-3 p-2 rounded-xl bg-[#12121a] hover:bg-[#20202e] transition-all border border-white/5 hover:border-red-500/40 group"
           >
             <img
-              src={m.poster}
+              src={getHdImageUrl(m.poster)}
               alt={m.title}
+              loading="lazy"
               className="w-10 h-14 object-cover rounded-md shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src =
+                  'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=300&auto=format&fit=crop&q=80';
+              }}
             />
             <div className="flex-grow min-w-0">
               <h4 className="font-bold text-xs text-white group-hover:text-[#e50914] truncate transition-colors">

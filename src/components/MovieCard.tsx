@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { Star, Play, Bookmark, Clock } from 'lucide-react';
 import { Movie } from '../types';
 import { isBookmarked, toggleBookmark } from '../services/storage';
+import { getHdImageUrl } from '../services/api';
 
 interface MovieCardProps {
   movie: Movie;
@@ -48,7 +49,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
 
         {/* Poster Image */}
         <img
-          src={movie.poster}
+          src={getHdImageUrl(movie.poster)}
           alt={movie.title}
           loading="lazy"
           decoding="async"
@@ -59,7 +60,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.src =
-              'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80';
+              'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop&q=80';
             setImgLoaded(true);
           }}
         />

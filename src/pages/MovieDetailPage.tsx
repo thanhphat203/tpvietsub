@@ -168,6 +168,10 @@ export const MovieDetailPage: React.FC = () => {
             src={getHdImageUrl(movie.backdrop || movie.poster)}
             alt={movie.title}
             className="w-full h-full object-cover object-center filter blur-2xl scale-125 opacity-35"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src =
+                'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200&auto=format&fit=crop&q=80';
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b10] via-[#0b0b10]/80 to-black/60" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#0b0b10] via-[#0b0b10]/80 to-transparent" />
@@ -210,7 +214,15 @@ export const MovieDetailPage: React.FC = () => {
           {/* Left Column: Poster & Quick Meta Info */}
           <div className="md:col-span-4 lg:col-span-3 space-y-4">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-[#26263b] bg-[#12121c] aspect-[2/3] card-3d">
-              <img src={getHdImageUrl(movie.poster)} alt={movie.title} className="w-full h-full object-cover" />
+              <img
+                src={getHdImageUrl(movie.poster)}
+                alt={movie.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop&q=80';
+                }}
+              />
               {movie.isHot && (
                 <div className="absolute top-3 left-3 bg-[#e50914] text-white font-black text-[11px] px-2.5 py-1 rounded shadow-lg uppercase tracking-wider">
                   HOT

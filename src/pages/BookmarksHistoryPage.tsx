@@ -9,6 +9,7 @@ import { History, Bookmark, Trash2, Play, Film } from 'lucide-react';
 import { getWatchHistory, clearWatchHistory, getBookmarks } from '../services/storage';
 import { WatchHistoryItem, Movie } from '../types';
 import { MovieCard } from '../components/MovieCard';
+import { getHdImageUrl } from '../services/api';
 
 export const BookmarksHistoryPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'history' | 'bookmarks'>('history');
@@ -94,9 +95,14 @@ export const BookmarksHistoryPage: React.FC = () => {
                   >
                     <div className="relative aspect-video rounded-lg overflow-hidden bg-black mb-2.5">
                       <img
-                        src={item.poster}
+                        src={getHdImageUrl(item.poster)}
                         alt={item.title}
+                        loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=300&auto=format&fit=crop&q=80';
+                        }}
                       />
                       <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 flex items-center justify-center">
                         <div className="w-9 h-9 rounded-full bg-[#e50914] text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">

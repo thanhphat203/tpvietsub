@@ -5,7 +5,7 @@
  */
 
 import { Movie, Episode, AnisrcRawMovie } from '../types';
-import apiSeedData from '../../data/api_seed.json';
+import unifiedMoviesSeed from '../../data/unified_movies.json';
 
 const CACHE_MOVIES_KEY = 'tp_api_movies_cache_v4';
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
@@ -95,17 +95,20 @@ function parseNDJSON<T>(text: string): T[] {
 }
 
 /**
- * Get Ultra HD Resolution image URL
+ * Get Ultra HD Resolution image URL (Always returns full accessible HTTP URL)
  */
 export function getHdImageUrl(url?: string): string {
-  if (!url) return 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80';
-  if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
-    const clean = url.startsWith('/') ? url : `/${url}`;
-    return `https://phimimg.com${clean}`;
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200&auto=format&fit=crop&q=80';
   }
-  return url
-    .replace(/\/t\/p\/w[0-9]+(_and_h[0-9]+_face)?\//, '/t/p/original/')
-    .replace(/\/t\/p\/w[0-9]+\//, '/t/p/original/');
+  const trimmed = url.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed
+      .replace(/\/t\/p\/w[0-9]+(_and_h[0-9]+_face)?\//, '/t/p/original/')
+      .replace(/\/t\/p\/w[0-9]+\//, '/t/p/original/');
+  }
+  const clean = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `https://phimimg.com${clean}`;
 }
 
 /**
@@ -248,10 +251,10 @@ export function transformKKPhimMovie(item: any): Movie {
 }
 
 /**
- * Get initial seed movies (100% real API movies from anisrc.top, 0 dummy sample movies)
+ * Get initial seed movies (100% real unified catalog, 0 broken images, full coverage)
  */
 export function getSeedMovies(): Movie[] {
-  return (apiSeedData as AnisrcRawMovie[]).map(transformRawMovie);
+  return (unifiedMoviesSeed as unknown as Movie[]);
 }
 
 /**
@@ -397,6 +400,34 @@ export async function fetchKKPhimCountry(countrySlug: string, page = 1): Promise
     }
   } catch (err) {
     console.warn(`Country fetch error for ${countrySlug}:`, err);
+  }
+
+  return [];
+}
+
+/**
+ * GET - Danh sách phim theo List (phim-le, phim-bo, hoat-hinh...)
+ */
+export async function fetchKKPhimList(listSlug: string, page = 1): Promise<Movie[]> {
+  const cacheKey = `list_${listSlug}_page_${page}`;
+  const cached = memoryCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  try {
+    const targetUrl = `https://phimapi.com/v1/api/danh-sach/${listSlug}?page=${page}`;
+    const proxyPath = `/api/kkphim/v1/api/danh-sach/${listSlug}?page=${page}`;
+    const text = await fetchSafeText(targetUrl, proxyPath);
+    const json = JSON.parse(text);
+
+    if (json.data && Array.isArray(json.data.items)) {
+      const movies = json.data.items.map(transformKKPhimMovie);
+      memoryCache.set(cacheKey, { data: movies, timestamp: Date.now() });
+      return movies;
+    }
+  } catch (err) {
+    console.warn(`List fetch error for ${listSlug}:`, err);
   }
 
   return [];
@@ -742,10 +773,13 @@ export async function fetchAggregatedMovies(maxPages = 3): Promise<Movie[]> {
     promises.push(fetchLatestUpdates(p));
   }
 
-  // KKPhim updates & Anime
+  // KKPhim updates & Categories
   promises.push(fetchKKPhimUpdates(1));
   promises.push(fetchKKPhimAnime(1));
+  promises.push(fetchKKPhimList('phim-le', 1));
   promises.push(fetchKKPhimCategory('hanh-dong', 1));
+  promises.push(fetchKKPhimCountry('au-my', 1));
+  promises.push(fetchKKPhimCountry('nhat-ban', 1));
   promises.push(fetchKKPhimCountry('han-quoc', 1));
 
   const results = await Promise.all(promises);

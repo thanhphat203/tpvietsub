@@ -21,7 +21,7 @@ export const Footer: React.FC = () => {
               </span>
             </Link>
             <p className="text-gray-400 text-xs leading-relaxed">
-              Kênh tổng hợp Vietsub phim Hoạt hình Trung Quốc (Donghua) chuyển thể từ tiểu thuyết Tu Tiên, Xuyên Không, Trọng Sinh, Hệ Thống... Cập nhật nhanh nhất, trải nghiệm mượt mà.
+              Kênh tổng hợp xem phim Vietsub & Thuyết minh chất lượng cao: Phim Hoạt Hình 3D, Anime Nhật Bản, Phim Hành Động, Phim Hàn Quốc, Phim Trung Quốc, Phim Lẻ Chiếu Rạp. Trải nghiệm xem phim mượt mà, tốc độ cao.
             </p>
           </div>
 
@@ -91,12 +91,12 @@ export const Footer: React.FC = () => {
         {/* Bottom Line */}
         <div className="pt-6 border-t border-[#1a1a24] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <p className="text-gray-500 text-xs">
-            © {new Date().getFullYear()} TP VietSub Donghua. Tất cả quyền được bảo lưu.
+            © {new Date().getFullYear()} TP VietSub Cinema. Tất cả quyền được bảo lưu.
           </p>
 
           <div className="flex items-center gap-4 text-gray-400">
             <span className="flex items-center gap-1">
-              Phát triển với <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" /> dành cho Fan Donghua
+              Phát triển với <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" /> dành cho cộng đồng yêu phim
             </span>
           </div>
 

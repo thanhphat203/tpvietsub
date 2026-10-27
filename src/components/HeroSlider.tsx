@@ -58,6 +58,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ movies }) => {
           src={hdPoster}
           alt={current.title}
           className="w-full h-full object-cover object-center filter blur-3xl scale-125 opacity-35 transition-all duration-1000 ease-out"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src =
+              'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200&auto=format&fit=crop&q=80';
+          }}
         />
         {/* Cinematic Vignette Overlays */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b10] via-[#0b0b10]/70 to-transparent" />
@@ -180,6 +184,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ movies }) => {
                 loading="eager"
                 decoding="async"
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/poster:scale-105"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&auto=format&fit=crop&q=80';
+                }}
               />
 
               {/* Top Quality Badge */}

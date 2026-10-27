@@ -14,7 +14,7 @@ import {
   History,
 } from 'lucide-react';
 import { ALL_GENRES, Movie } from '../types';
-import { searchMoviesApi } from '../services/api';
+import { searchMoviesApi, getHdImageUrl } from '../services/api';
 import { searchMovies } from '../../lib/movies';
 
 export const Header: React.FC = () => {
@@ -244,9 +244,14 @@ export const Header: React.FC = () => {
                       className="flex items-center gap-3 p-2.5 hover:bg-[#1a1a28] transition-colors group"
                     >
                       <img
-                        src={movie.poster}
+                        src={getHdImageUrl(movie.poster)}
                         alt={movie.title}
+                        loading="lazy"
                         className="w-10 h-14 object-cover rounded-lg shrink-0 bg-black"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=300&auto=format&fit=crop&q=80';
+                        }}
                       />
                       <div className="min-w-0 flex-grow">
                         <h4 className="text-xs font-bold text-white group-hover:text-red-400 truncate">

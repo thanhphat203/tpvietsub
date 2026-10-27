@@ -130,12 +130,11 @@ export function getSeriesMovies(): Movie[] {
  * Get Phim Lẻ (Single Movie / Chiếu Rạp)
  */
 export function getSingleMovies(): Movie[] {
-  const singles = getAllMovies().filter((m) => m.type === 'single');
-  if (singles.length > 0) return singles;
   return getAllMovies().filter(
     (m) =>
-      m.genres.some((g) => g.includes('Lẻ') || g.includes('Chiếu Rạp')) ||
-      m.duration?.toLowerCase().includes('phút')
+      m.type === 'single' ||
+      m.genres.some((g) => g.toLowerCase().includes('lẻ') || g.toLowerCase().includes('chiếu rạp')) ||
+      (m.duration && m.duration.toLowerCase().includes('phút') && !m.episodeInfo?.toLowerCase().includes('tập'))
   );
 }
 
@@ -149,49 +148,90 @@ export function getMoviesByCountry(country: string): Movie[] {
 }
 
 /**
- * Get Hoạt Hình 3D (3D Donghua / Tiên hiệp / Huyền huyễn 3D)
+ * Get Hoạt Hình 3D Trung Quốc (3D Donghua / Tiên hiệp / Huyền huyễn 3D)
  */
 export function get3DAnimationMovies(): Movie[] {
-  return getAllMovies().filter((m) =>
-    m.genres.some(
-      (g) =>
-        g.toLowerCase().includes('3d') ||
-        g.toLowerCase().includes('tu tiên') ||
-        g.toLowerCase().includes('huyền huyễn') ||
-        g.toLowerCase().includes('luyện cấp')
-    )
-  );
+  return getAllMovies().filter((m) => {
+    const isChina = m.country?.toLowerCase().includes('trung') || m.source === 'anisrc';
+    const isJapan = m.country?.toLowerCase().includes('nhật');
+    if (isJapan) return false;
+
+    const has3D = m.genres.some((g) => {
+      const lower = g.toLowerCase();
+      return (
+        lower.includes('3d') ||
+        lower.includes('tu tiên') ||
+        lower.includes('huyền huyễn') ||
+        lower.includes('luyện cấp') ||
+        lower.includes('donghua')
+      );
+    });
+
+    return isChina && (has3D || m.genres.some((g) => g.toLowerCase().includes('hoạt hình')));
+  });
 }
 
 /**
- * Get Anime (Hoạt hình Nhật Bản / 2D / Chuyển sinh)
+ * Get Anime (Hoạt hình Nhật Bản thuần 2D/3D - KHÔNG lẫn Donghua Trung Quốc)
  */
 export function getAnimeMovies(): Movie[] {
-  return getAllMovies().filter((m) =>
-    m.country?.toLowerCase().includes('nhật') ||
-    m.genres.some(
-      (g) =>
-        g.toLowerCase().includes('anime') ||
-        g.toLowerCase().includes('manga') ||
-        g.toLowerCase().includes('chuyển sinh') ||
-        g.toLowerCase().includes('học đường')
-    )
-  );
+  return getAllMovies().filter((m) => {
+    // Strictly exclude Chinese Donghua
+    const isChina = m.country?.toLowerCase().includes('trung') || m.source === 'anisrc';
+    const hasDonghuaGenre = m.genres.some((g) => {
+      const lower = g.toLowerCase();
+      return lower.includes('tu tiên') || lower.includes('huyền huyễn') || lower.includes('donghua');
+    });
+    if (isChina || hasDonghuaGenre) return false;
+
+    // Must be Japanese or pure Anime
+    const isJapan = m.country?.toLowerCase().includes('nhật');
+    const hasAnimeGenre = m.genres.some((g) => {
+      const lower = g.toLowerCase();
+      return lower.includes('anime') || lower.includes('manga') || lower.includes('hoạt hình');
+    });
+
+    return isJapan || hasAnimeGenre;
+  });
 }
 
 /**
- * Get Phim Hành Động
+ * Get Phim Hành Động (Live-action Hollywood, Mỹ, Quốc tế - KHÔNG lẫn Anime hay Hoạt hình)
  */
 export function getActionMovies(): Movie[] {
-  return getAllMovies().filter((m) =>
-    m.genres.some(
-      (g) =>
-        g.toLowerCase().includes('hành động') ||
-        g.toLowerCase().includes('võ thuật') ||
-        g.toLowerCase().includes('chiến tranh') ||
-        g.toLowerCase().includes('hình sự')
-    )
-  );
+  return getAllMovies().filter((m) => {
+    // Strictly exclude ALL animation
+    const isAnimation =
+      m.genres.some((g) => {
+        const lower = g.toLowerCase();
+        return (
+          lower.includes('hoạt hình') ||
+          lower.includes('anime') ||
+          lower.includes('donghua') ||
+          lower.includes('3d') ||
+          lower.includes('tu tiên') ||
+          lower.includes('huyền huyễn')
+        );
+      }) || m.source === 'anisrc';
+
+    if (isAnimation) return false;
+
+    // Must have action/fighting/war/crime genres OR be Western/US/Asian action
+    return (
+      m.genres.some((g) => {
+        const lower = g.toLowerCase();
+        return (
+          lower.includes('hành động') ||
+          lower.includes('võ thuật') ||
+          lower.includes('chiến tranh') ||
+          lower.includes('hình sự') ||
+          lower.includes('phiêu lưu')
+        );
+      }) ||
+      m.country?.toLowerCase().includes('mỹ') ||
+      m.country?.toLowerCase().includes('âu')
+    );
+  });
 }
 
 /**

@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { Trophy, Star, Eye, Flame, Play } from 'lucide-react';
 import { Movie } from '../types';
 import { getAllMovies, initializeMovies } from '../../lib/movies';
+import { getHdImageUrl } from '../services/api';
 
 export const LeaderboardPage: React.FC = () => {
   const [movies, setMovies] = useState<Movie[]>(getAllMovies());
@@ -112,9 +113,14 @@ export const LeaderboardPage: React.FC = () => {
                   {/* Thumbnail */}
                   <div className="relative w-12 h-16 sm:w-16 sm:h-22 rounded-xl overflow-hidden shrink-0 bg-black">
                     <img
-                      src={movie.poster}
+                      src={getHdImageUrl(movie.poster)}
                       alt={movie.title}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=300&auto=format&fit=crop&q=80';
+                      }}
                     />
                   </div>
 

@@ -21,6 +21,8 @@ import {
   getActionMovies,
   getChineseMovies,
   getKoreanMovies,
+  getSingleMovies,
+  getSeriesMovies,
   initializeMovies,
 } from '../../lib/movies';
 import { ChevronRight } from 'lucide-react';
@@ -59,19 +61,11 @@ export const HomePage: React.FC = () => {
   }, [allMovies]);
 
   const seriesMovies = useMemo(() => {
-    return allMovies.filter((m) => m.type !== 'single').slice(0, 12);
+    return getSeriesMovies().slice(0, 12);
   }, [allMovies]);
 
   const singleMovies = useMemo(() => {
-    const singles = allMovies.filter((m) => m.type === 'single');
-    if (singles.length > 0) return singles.slice(0, 12);
-    return allMovies
-      .filter(
-        (m) =>
-          m.genres.some((g) => g.includes('Lẻ') || g.includes('Chiếu Rạp')) ||
-          m.duration?.toLowerCase().includes('phút')
-      )
-      .slice(0, 12);
+    return getSingleMovies().slice(0, 12);
   }, [allMovies]);
 
   const donghua3DMovies = useMemo(() => {
@@ -129,9 +123,9 @@ export const HomePage: React.FC = () => {
       case 'korea':
         return { title: 'Phim Hàn Quốc', movies: getKoreanMovies(), link: '/kham-pha?country=Hàn+Quốc' };
       case 'series':
-        return { title: 'Phim Bộ Tuyển Chọn', movies: seriesMovies, link: '/phim-bo' };
+        return { title: 'Phim Bộ Tuyển Chọn', movies: getSeriesMovies(), link: '/phim-bo' };
       case 'single':
-        return { title: 'Phim Lẻ Chiếu Rạp', movies: singleMovies, link: '/phim-le' };
+        return { title: 'Phim Lẻ Chiếu Rạp', movies: getSingleMovies(), link: '/phim-le' };
       default:
         return null;
     }

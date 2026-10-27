@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { Play, History, Trash2, ChevronRight } from 'lucide-react';
 import { getWatchHistory, clearWatchHistory } from '../services/storage';
 import { WatchHistoryItem } from '../types';
+import { getHdImageUrl } from '../services/api';
 
 export const ContinueWatchingRow: React.FC = () => {
   const [history, setHistory] = useState<WatchHistoryItem[]>([]);
@@ -54,9 +55,14 @@ export const ContinueWatchingRow: React.FC = () => {
           >
             <div className="relative aspect-video rounded-lg overflow-hidden bg-black mb-2">
               <img
-                src={item.poster}
+                src={getHdImageUrl(item.poster)}
                 alt={item.title}
+                loading="lazy"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=300&auto=format&fit=crop&q=80';
+                }}
               />
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                 <div className="w-8 h-8 rounded-full bg-[#e50914] text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
