@@ -1,137 +1,49 @@
-/**
- * @file server.js
- * Production Express Server with Built-in API Proxy, Caching & SPA Fallback
- */
-
 import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+const root = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Enable CORS for all incoming requests
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
-// Proxy for phimapi.com (KKPhim API)
-app.get('/api/kkphim/*', async (req, res) => {
+const hosts = { kkphim: 'https://phimapi.com', anisrc: 'https://anisrc.top', zophim: 'https://api-zophim.blogspot.com', nguonc: 'https://phim.nguonc.com', phim4k: 'https://vsmov.com' };
+const cache = new Map();
+const pending = new Map();
+let cachedBytes = 0;
+async function load(url) {
+  const hit = cache.get(url);
+  if (hit && Date.now() - hit.time < 60000) return hit;
+  if (pending.has(url)) return pending.get(url);
+  const task = (async () => {
+    const response = await fetch(url, { signal: AbortSignal.timeout(10000), headers: { Accept: 'application/json,text/plain' } });
+    const body = await response.text();
+    const value = { body, status: response.status, contentType: response.headers.get('content-type') || 'application/json', time: Date.now(), size: Buffer.byteLength(body) };
+    if (response.ok && value.size < 2_000_000) {
+      if (hit) { cachedBytes -= hit.size; cache.delete(url); }
+      cache.set(url, value); cachedBytes += value.size;
+      while (cachedBytes > 10_000_000 || cache.size > 100) {
+        const key = cache.keys().next().value;
+        cachedBytes -= cache.get(key).size; cache.delete(key);
+      }
+    }
+    return value;
+  })().finally(() => pending.delete(url));
+  pending.set(url, task); return task;
+}
+app.get('/api/:provider/*', async (req, res) => {
+  const host = hosts[req.params.provider];
+  if (!host) return res.status(404).json({ error: 'Unknown provider' });
+  const suffix = req.params[0];
+  const url = new URL('/' + suffix + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''), host);
+  if (url.origin !== host) return res.status(400).json({ error: 'Invalid provider path' });
   try {
-    const targetPath = req.params[0];
-    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-    const targetUrl = `https://phimapi.com/${targetPath}${queryString}`;
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-    });
-    const data = await response.text();
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.status(response.status).send(data);
-  } catch (error) {
-    console.error('KKPhim proxy error:', error);
-    res.status(500).json({ error: 'Proxy failed to fetch from KKPhim' });
+    const data = await load(url.href);
+    res.setHeader('Cache-Control', data.status === 200 ? 'public, max-age=60' : 'no-store');
+    res.status(data.status).type(data.contentType).send(data.body);
+  } catch {
+    res.status(502).json({ error: 'Nguồn phim tạm thời không phản hồi' });
   }
 });
-
-// Proxy for anisrc.top
-app.get('/api/anisrc/*', async (req, res) => {
-  try {
-    const targetPath = req.params[0];
-    const targetUrl = `https://anisrc.top/${targetPath}`;
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-    });
-    const text = await response.text();
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.status(response.status).send(text);
-  } catch (error) {
-    console.error('Anisrc proxy error:', error);
-    res.status(500).json({ error: 'Proxy failed to fetch from anisrc' });
-  }
-});
-
-// Proxy for api-zophim.blogspot.com
-app.get('/api/zophim/*', async (req, res) => {
-  try {
-    const targetPath = req.params[0];
-    const targetUrl = `https://api-zophim.blogspot.com/${targetPath}`;
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-    });
-    const text = await response.text();
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.status(response.status).send(text);
-  } catch (error) {
-    console.error('Zophim proxy error:', error);
-    res.status(500).json({ error: 'Proxy failed to fetch from zophim' });
-  }
-});
-
-// Proxy for NguonC (phim.nguonc.com)
-app.get('/api/nguonc/*', async (req, res) => {
-  try {
-    const targetPath = req.params[0];
-    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-    const targetUrl = `https://phim.nguonc.com/${targetPath}${queryString}`;
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-    });
-    const data = await response.text();
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.status(response.status).send(data);
-  } catch (error) {
-    console.error('NguonC proxy error:', error);
-    res.status(500).json({ error: 'Proxy failed to fetch from NguonC' });
-  }
-});
-
-// Proxy for Phim4K (vsmov.com)
-app.get('/api/phim4k/*', async (req, res) => {
-  try {
-    const targetPath = req.params[0];
-    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
-    const targetUrl = `https://vsmov.com/${targetPath}${queryString}`;
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-    });
-    const data = await response.text();
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.status(response.status).send(data);
-  } catch (error) {
-    console.error('Phim4K proxy error:', error);
-    res.status(500).json({ error: 'Proxy failed to fetch from Phim4K' });
-  }
-});
-
-// Serve Vite build output
-app.use(express.static(path.join(__dirname, 'dist')));
-
-// Fallback all routes to index.html for SPA client-side routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 TP VietSub Donghua Server running at http://localhost:${PORT}`);
-});
+app.use('/api', (_req, res) => res.status(404).json({ error: 'Unknown API route' }));
+app.use('/assets', express.static(path.join(root, 'dist/assets'), { immutable: true, maxAge: '1y' }));
+app.use(express.static(path.join(root, 'dist'), { maxAge: 0 }));
+app.get('*', (_req, res) => { res.setHeader('Cache-Control', 'no-cache'); res.sendFile(path.join(root, 'dist/index.html')); });
+app.listen(process.env.PORT || 3000, '0.0.0.0', () => console.log(`TP VietSub: http://localhost:${process.env.PORT || 3000}`));

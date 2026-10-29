@@ -13,6 +13,7 @@ export default defineConfig(() => {
       },
     },
     build: {
+      target: ['es2018', 'safari14', 'chrome80'],
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {

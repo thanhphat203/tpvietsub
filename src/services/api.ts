@@ -5,9 +5,10 @@
  */
 
 import { Movie, Episode, AnisrcRawMovie } from '../types';
-import unifiedMoviesSeed from '../../data/unified_movies.json';
+import startupRaw from '../../data/startup_raw.json';
+const unifiedMoviesSeed = startupRaw.map(transformKKPhimMovie);
 
-const CACHE_MOVIES_KEY = 'tp_api_movies_cache_v4';
+const CACHE_MOVIES_KEY = 'tp_api_movies_cache_v5';
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 // In-memory runtime cache
@@ -18,7 +19,7 @@ const isDev = import.meta.env.DEV;
 /**
  * Universal safe fetcher with timeout & fast proxy
  */
-async function fetchWithTimeout(url: string, timeoutMs = 3500): Promise<Response> {
+async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -39,23 +40,36 @@ async function fetchWithTimeout(url: string, timeoutMs = 3500): Promise<Response
 /**
  * Fast safe text fetcher
  */
-async function fetchSafeText(targetUrl: string, proxyPath?: string): Promise<string> {
+const textPending = new Map<string, Promise<string>>();
+const textCache = new Map<string, { value: string; time: number }>();
+function fetchSafeText(targetUrl: string, proxyPath?: string): Promise<string> {
+  const hit = textCache.get(targetUrl);
+  if (hit && Date.now() - hit.time < 120000) return Promise.resolve(hit.value);
+  const pending = textPending.get(targetUrl);
+  if (pending) return pending;
+  const task = fetchTextUncached(targetUrl, proxyPath).then(value => {
+    textCache.set(targetUrl, { value, time: Date.now() });
+    if (textCache.size > 40) textCache.delete(textCache.keys().next().value!);
+    return value;
+  }).finally(() => textPending.delete(targetUrl));
+  textPending.set(targetUrl, task); return task;
+}
+async function fetchTextUncached(targetUrl: string, proxyPath?: string): Promise<string> {
   const urlsToTry: string[] = [];
 
   // In dev mode, use Vite proxy first
-  if (isDev && proxyPath) {
+  if ((isDev || import.meta.env.VITE_API_PROXY === 'true') && proxyPath) {
     urlsToTry.push(proxyPath);
   }
 
   // Direct fetch
   urlsToTry.push(targetUrl);
 
-  // Fallback CORS proxy
-  urlsToTry.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`);
+
 
   for (const url of urlsToTry) {
     try {
-      const res = await fetchWithTimeout(url, 2800);
+      const res = await fetchWithTimeout(url, 8000);
       if (res.ok) {
         const text = await res.text();
         if (text && text.length > 0 && !text.includes('429 Too Many Requests')) {
@@ -103,9 +117,7 @@ export function getHdImageUrl(url?: string): string {
   }
   const trimmed = url.trim();
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return trimmed
-      .replace(/\/t\/p\/w[0-9]+(_and_h[0-9]+_face)?\//, '/t/p/original/')
-      .replace(/\/t\/p\/w[0-9]+\//, '/t/p/original/');
+    return trimmed.replace(/\/t\/p\/(?:original|w[0-9]+(?:_and_h[0-9]+_face)?)\//, '/t/p/w500/');
   }
   const clean = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   return `https://phimimg.com${clean}`;
@@ -185,14 +197,14 @@ export function transformRawMovie(raw: AnisrcRawMovie): Movie {
 export function transformKKPhimMovie(item: any): Movie {
   const slug = item.slug || 'phim';
   const hash = hashString(slug + (item.name || ''));
-  const rating = Number((8.5 + (hash % 14) / 10).toFixed(1));
-  const views = 90000 + (hash % 1900000);
+  const rating = Number(item.tmdb?.vote_average || item.imdb?.vote_average) || 0;
+  const views = Number(item.view) || 0;
   const year = item.year || parseInt(item.release_date) || 2024;
 
   const poster = getHdImageUrl(item.poster_url || item.thumb_url);
   const backdrop = getHdImageUrl(item.thumb_url || item.poster_url);
 
-  let country = 'Trung Quốc';
+  let country = 'Chưa rõ';
   if (Array.isArray(item.country) && item.country.length > 0) {
     country = item.country[0]?.name || item.country[0] || 'Trung Quốc';
   } else if (typeof item.country === 'string' && item.country.trim()) {
@@ -215,10 +227,8 @@ export function transformKKPhimMovie(item: any): Movie {
     genres.push('Tu Tiên');
   }
 
-  const isSingle =
-    item.type === 'single' ||
-    (item.time && item.time.toLowerCase().includes('phút') && !item.time.toLowerCase().includes('tập')) ||
-    genres.some((g: string) => g.toLowerCase().includes('chiếu rạp') || g.toLowerCase().includes('phim lẻ'));
+  const isSingle = item.type === 'single' || item.tmdb?.type === 'movie';
+  if (item.chieurap === true && !genres.includes('Chiếu Rạp')) genres.push('Chiếu Rạp');
 
   const status = item.episode_current || item.status || 'Full HD';
 
@@ -230,7 +240,7 @@ export function transformKKPhimMovie(item: any): Movie {
     poster,
     backdrop,
     description: (item.content || item.description || 'Nội dung phim đang cập nhật.').replace(/<[^>]+>/g, '').trim(),
-    genres: genres.length > 0 ? genres : ['Hoạt Hình'],
+    genres: genres.length > 0 ? genres : [],
     country,
     year,
     status,
@@ -240,7 +250,7 @@ export function transformKKPhimMovie(item: any): Movie {
     views,
     updatedAt: item.modified?.time ? item.modified.time.split('T')[0] : new Date().toISOString().split('T')[0],
     isHot: views > 850000,
-    isNew: year >= 2024,
+    isNew: year >= new Date().getFullYear(),
     type: isSingle ? 'single' : 'series',
     airSchedule: '',
     tmdbId: item.tmdb?.id || '',
@@ -433,13 +443,13 @@ export async function fetchKKPhimUpdates(page = 1): Promise<Movie[]> {
   }
 
   try {
-    const targetUrl = `https://phimapi.com/danh-sach/phim-moi-cap-nhat?page=${page}`;
-    const proxyPath = `/api/kkphim/danh-sach/phim-moi-cap-nhat?page=${page}`;
+    const targetUrl = `https://phimapi.com/v1/api/danh-sach/phim-moi?limit=24&page=${page}`;
+    const proxyPath = `/api/kkphim/v1/api/danh-sach/phim-moi?limit=24&page=${page}`;
     const text = await fetchSafeText(targetUrl, proxyPath);
     const json = JSON.parse(text);
 
-    if (json.status && Array.isArray(json.items)) {
-      const movies = json.items.map(transformKKPhimMovie);
+    if (json.status && Array.isArray(json.data?.items)) {
+      const movies = json.data.items.map(transformKKPhimMovie);
       memoryCache.set(cacheKey, { data: movies, timestamp: Date.now() });
 
       movies.forEach((m: Movie) => {
@@ -621,7 +631,7 @@ export async function fetchPhim4KList(catalogPath: string, page = 1): Promise<Mo
       const isSingle = catalogPath.includes('phim-le');
       const defaultGenre = catalogPath.includes('hoat-hinh') ? 'Hoạt Hình' : isSingle ? 'Chiếu Rạp' : 'Phim Bộ';
       const movies = items.map((it: any) =>
-        transformPhim4KItem(it, isSingle ? 'single' : 'series', defaultGenre)
+        transformPhim4KMovie(it, isSingle ? 'single' : 'series', defaultGenre)
       );
       memoryCache.set(cacheKey, { data: movies, timestamp: Date.now() });
       return movies;
@@ -698,8 +708,8 @@ export async function searchMoviesApi(keyword: string, page = 1): Promise<Movie[
   const searchKKPhim = async (): Promise<Movie[]> => {
     try {
       const encoded = encodeURIComponent(trimmedKey);
-      const targetUrl = `https://phimapi.com/v1/api/tim-kiem?keyword=${encoded}&limit=20`;
-      const proxyPath = `/api/kkphim/v1/api/tim-kiem?keyword=${encoded}&limit=20`;
+      const targetUrl = `https://phimapi.com/v1/api/tim-kiem?keyword=${encoded}&limit=24&page=${page}`;
+      const proxyPath = `/api/kkphim/v1/api/tim-kiem?keyword=${encoded}&limit=24&page=${page}`;
       const text = await fetchSafeText(targetUrl, proxyPath);
       const json = JSON.parse(text);
       if (json.data && Array.isArray(json.data.items)) {
@@ -715,8 +725,8 @@ export async function searchMoviesApi(keyword: string, page = 1): Promise<Movie[
   const searchNguonC = async (): Promise<Movie[]> => {
     try {
       const encoded = encodeURIComponent(trimmedKey);
-      const targetUrl = `https://phim.nguonc.com/api/films/search?keyword=${encoded}&page=1`;
-      const proxyPath = `/api/nguonc/api/films/search?keyword=${encoded}&page=1`;
+      const targetUrl = `https://phim.nguonc.com/api/films/search?keyword=${encoded}&page=${page}`;
+      const proxyPath = `/api/nguonc/api/films/search?keyword=${encoded}&page=${page}`;
       const text = await fetchSafeText(targetUrl, proxyPath);
       const json = JSON.parse(text);
       if (json.status === 'success' && Array.isArray(json.items)) {
@@ -732,8 +742,8 @@ export async function searchMoviesApi(keyword: string, page = 1): Promise<Movie[
   const searchPhim4K = async (): Promise<Movie[]> => {
     try {
       const encoded = encodeURIComponent(trimmedKey);
-      const targetUrl = `https://vsmov.com/api/tim-kiem?keyword=${encoded}&page=1`;
-      const proxyPath = `/api/phim4k/api/tim-kiem?keyword=${encoded}&page=1`;
+      const targetUrl = `https://vsmov.com/api/tim-kiem?keyword=${encoded}&page=${page}`;
+      const proxyPath = `/api/phim4k/api/tim-kiem?keyword=${encoded}&page=${page}`;
       const text = await fetchSafeText(targetUrl, proxyPath);
       const json = JSON.parse(text);
       const items = json.data?.items || json.items;
@@ -747,14 +757,9 @@ export async function searchMoviesApi(keyword: string, page = 1): Promise<Movie[
   };
 
   try {
-    const [anisrcResults, kkResults, ncResults, p4kResults] = await Promise.all([
-      searchAnisrc(),
-      searchKKPhim(),
-      searchNguonC(),
-      searchPhim4K(),
-    ]);
-    const merged = [...anisrcResults, ...kkResults, ...ncResults, ...p4kResults];
-
+    // Primary source first; query backups only if it returns no results.
+    let merged = await searchKKPhim();
+    if (!merged.length) merged = await searchAnisrc();
     // Deduplicate by slug
     const seen = new Set<string>();
     const unique: Movie[] = [];
@@ -786,7 +791,7 @@ export async function searchMoviesApi(keyword: string, page = 1): Promise<Movie[
       (m.titleOriginal && m.titleOriginal.toLowerCase().includes(q)) ||
       m.description.toLowerCase().includes(q) ||
       m.genres.some((g) => g.toLowerCase().includes(q))
-  );
+  ).slice((page - 1) * 24, page * 24);
 }
 
 /**
@@ -837,7 +842,7 @@ function parseEpisodesFromKKPhim(data: any): Episode[] {
         const numMatch = rawName.match(/\d+/);
         const tap = numMatch ? String(parseInt(numMatch[0], 10)) : rawName.trim();
 
-        const existing = episodesMap.get(tap) || { tap };
+        const existing: Episode = episodesMap.get(tap) || { tap };
         if (isTm) {
           existing.tm = ep.link_m3u8 || ep.link_embed;
           existing.m3u8_tm = ep.link_m3u8;
@@ -870,7 +875,7 @@ function parseEpisodesFromNguonC(data: any): Episode[] {
         const rawName = ep.name || ep.slug || '';
         const numMatch = rawName.match(/\d+/);
         const tap = numMatch ? String(parseInt(numMatch[0], 10)) : rawName.trim();
-        const existing = episodesMap.get(tap) || { tap };
+        const existing: Episode = episodesMap.get(tap) || { tap };
         const streamUrl = ep.m3u8 || ep.embed;
         if (isTm) {
           existing.tm = streamUrl;
@@ -902,7 +907,7 @@ function parseEpisodesFromPhim4K(data: any): Episode[] {
       const rawName = ep.name || ep.slug || '';
       const numMatch = rawName.match(/\d+/);
       const tap = numMatch ? String(parseInt(numMatch[0], 10)) : rawName.trim();
-      const existing = episodesMap.get(tap) || { tap };
+      const existing: Episode = episodesMap.get(tap) || { tap };
       const streamUrl = ep.link_m3u8 || ep.link_embed || ep.embed;
       if (isTm) {
         existing.tm = streamUrl;
@@ -931,7 +936,7 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
   // 1. Check in-memory cache
   const memoryKey = `episodes_${cleanSlug}`;
   const memCached = memoryCache.get(memoryKey);
-  if (memCached) {
+  if (memCached && Date.now() - memCached.timestamp < CACHE_TTL_MS) {
     return memCached.data;
   }
 
@@ -939,8 +944,9 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
   try {
     const localRaw = localStorage.getItem(`tp_eps_${cleanSlug}`);
     if (localRaw) {
-      const parsed = JSON.parse(localRaw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      const entry = JSON.parse(localRaw);
+      const parsed = entry.episodes;
+      if (Date.now() - entry.timestamp < CACHE_TTL_MS && Array.isArray(parsed) && parsed.length > 0) {
         memoryCache.set(memoryKey, { data: parsed, timestamp: Date.now() });
         return parsed;
       }
@@ -1011,30 +1017,20 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
   };
 
   try {
-    // Parallel Fetch across all providers to aggregate multiple independent streaming servers
-    const results = await Promise.allSettled([
-      fetchNguonC(),
-      fetchKKPhim(),
-      fetchAnisrc(),
-      fetchPhim4K(),
-      fetchBlogspot(),
-    ]);
-
     const successfulLists: { provider: string; eps: Episode[] }[] = [];
-    if (results[0].status === 'fulfilled' && results[0].value.length > 0) {
-      successfulLists.push({ provider: 'NguonC', eps: results[0].value });
-    }
-    if (results[1].status === 'fulfilled' && results[1].value.length > 0) {
-      successfulLists.push({ provider: 'KKPhim', eps: results[1].value });
-    }
-    if (results[2].status === 'fulfilled' && results[2].value.length > 0) {
-      successfulLists.push({ provider: 'Anisrc', eps: results[2].value });
-    }
-    if (results[3].status === 'fulfilled' && results[3].value.length > 0) {
-      successfulLists.push({ provider: 'Phim4K', eps: results[3].value });
-    }
-    if (results[4].status === 'fulfilled' && results[4].value.length > 0) {
-      successfulLists.push({ provider: 'Blogspot', eps: results[4].value });
+    // First usable provider wins; slow/dead providers no longer block playback.
+    const providers = [
+      { provider: 'KKPhim', load: fetchKKPhim },
+      { provider: 'Anisrc', load: fetchAnisrc },
+      { provider: 'NguonC', load: fetchNguonC },
+      { provider: 'Phim4K', load: fetchPhim4K },
+      { provider: 'Blogspot', load: fetchBlogspot },
+    ];
+    for (const source of providers) {
+      try {
+        const eps = await source.load();
+        if (eps.length) { successfulLists.push({ provider: source.provider, eps }); break; }
+      } catch { /* next provider */ }
     }
 
     if (successfulLists.length > 0) {
@@ -1043,7 +1039,7 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
 
       for (const listObj of successfulLists) {
         for (const ep of listObj.eps) {
-          const existing = tapMap.get(ep.tap) || {
+          const existing: Episode = tapMap.get(ep.tap) || {
             tap: ep.tap,
             servers: [],
           };
@@ -1141,7 +1137,7 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
       if (mergedEpisodes.length > 0) {
         memoryCache.set(memoryKey, { data: mergedEpisodes, timestamp: Date.now() });
         try {
-          localStorage.setItem(`tp_eps_${cleanSlug}`, JSON.stringify(mergedEpisodes));
+          localStorage.setItem(`tp_eps_${cleanSlug}`, JSON.stringify({ episodes: mergedEpisodes, timestamp: Date.now() }));
         } catch {
           // ignore
         }
@@ -1240,7 +1236,7 @@ export async function fetchMovieDetail(slug: string): Promise<Movie | undefined>
   }
 
   if (movie) {
-    const episodes = await fetchMovieEpisodes(movie.slug);
+    const episodes = movie.episodes?.length ? movie.episodes : await fetchMovieEpisodes(movie.slug);
     if (episodes && episodes.length > 0) {
       movie = {
         ...movie,
@@ -1256,50 +1252,9 @@ export async function fetchMovieDetail(slug: string): Promise<Movie | undefined>
 /**
  * Preload and aggregate real movies from ALL Providers (KKPhim + NguonC + Phim4K + Anisrc)
  */
-export async function fetchAggregatedMovies(maxPages = 3): Promise<Movie[]> {
-  const promises: Promise<Movie[]>[] = [];
-
-  // Anisrc updates
-  for (let p = 1; p <= maxPages; p++) {
-    promises.push(fetchLatestUpdates(p));
-  }
-
-  // KKPhim updates & Categories
-  promises.push(fetchKKPhimUpdates(1));
-  promises.push(fetchKKPhimAnime(1));
-  promises.push(fetchKKPhimList('phim-le', 1));
-  promises.push(fetchKKPhimCategory('hanh-dong', 1));
-  promises.push(fetchKKPhimCountry('au-my', 1));
-  promises.push(fetchKKPhimCountry('nhat-ban', 1));
-  promises.push(fetchKKPhimCountry('han-quoc', 1));
-
-  // NguonC updates & Categories
-  promises.push(fetchNguonCList('phim-moi-cap-nhat', 1));
-  promises.push(fetchNguonCList('danh-sach/phim-le', 1));
-  promises.push(fetchNguonCList('danh-sach/phim-bo', 1));
-  promises.push(fetchNguonCList('danh-sach/hoat-hinh', 1));
-
-  // Phim4K updates & Categories
-  promises.push(fetchPhim4KList('danh-sach/phim-le', 1));
-  promises.push(fetchPhim4KList('danh-sach/phim-bo', 1));
-
-  const results = await Promise.all(promises);
-  const combined = results.flat();
-
-  // Deduplicate
-  const seen = new Set<string>();
-  const uniqueMovies: Movie[] = [];
-  for (const m of combined) {
-    if (m && m.slug && !seen.has(m.slug)) {
-      seen.add(m.slug);
-      uniqueMovies.push(m);
-    }
-  }
-
-  if (uniqueMovies.length > 0) {
-    saveCachedLocalMovies(uniqueMovies);
-    return uniqueMovies;
-  }
-
-  return getCachedLocalMovies();
+export async function fetchAggregatedMovies(_maxPages = 1): Promise<Movie[]> {
+  // Catalog pagination loads other pages on demand; startup makes just one request.
+  const movies = await fetchKKPhimUpdates(1);
+  if (movies.length) saveCachedLocalMovies(movies);
+  return movies.length ? movies : getCachedLocalMovies();
 }

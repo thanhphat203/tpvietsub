@@ -49,6 +49,9 @@ export const MovieDetailPage: React.FC = () => {
 
     if (!slug) return;
 
+    setCurrentTap(searchParams.get('tap') || undefined);
+    setMovie(null);
+    setLoadingEpisodes(true);
     // 1. Sync check
     const syncData = getMovieDetailSync(slug);
     if (syncData) {

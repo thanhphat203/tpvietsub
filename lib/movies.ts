@@ -13,42 +13,28 @@ let inMemoryMovies: Movie[] = getCachedLocalMovies();
 /**
  * Initialize movies: load local cache immediately, then sync fresh updates in background
  */
-export async function initializeMovies(): Promise<Movie[]> {
-  try {
-    const apiMovies = await fetchAggregatedMovies(3);
-    if (apiMovies && apiMovies.length > 0) {
-      inMemoryMovies = apiMovies;
-      window.dispatchEvent(new Event('tp_movies_updated'));
-      return apiMovies;
-    }
-  } catch (err) {
-    console.error('Failed to sync movies from API', err);
-  }
-  return inMemoryMovies;
+let initialization: Promise<Movie[]> | undefined;
+let syncedAt = 0;
+export function initializeMovies(): Promise<Movie[]> {
+  if (initialization) return initialization;
+  if (Date.now() - syncedAt < 5 * 60 * 1000) return Promise.resolve(inMemoryMovies);
+  initialization = fetchAggregatedMovies(1).then(movies => {
+    const merged = new Map(movies.map(m => [m.slug, m]));
+    inMemoryMovies.forEach(m => { if (!merged.has(m.slug)) merged.set(m.slug, m); });
+    inMemoryMovies = Array.from(merged.values());
+    syncedAt = Date.now();
+    window.dispatchEvent(new Event('tp_movies_updated'));
+    return inMemoryMovies;
+  }).finally(() => { initialization = undefined; });
+  return initialization;
 }
 
-// Background startup sync
-if (typeof window !== 'undefined') {
-  initializeMovies();
-}
-
-/**
- * Get all movies currently in memory or local cache
- */
-export function getAllMovies(): Movie[] {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Failed to load movies from localStorage', err);
-  }
-  return inMemoryMovies.length > 0 ? inMemoryMovies : getCachedLocalMovies();
-}
+// Read and decode the persisted admin catalog only once, never per card/selector.
+try {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) { const parsed = JSON.parse(saved); if (Array.isArray(parsed) && parsed.length) inMemoryMovies = parsed; }
+} catch { /* private mode or corrupt cache: use seed */ }
+export function getAllMovies(): Movie[] { return inMemoryMovies; }
 
 /**
  * Save updated movies array to localStorage and emit update event
@@ -129,14 +115,7 @@ export function getSeriesMovies(): Movie[] {
 /**
  * Get Phim Lẻ (Single Movie / Chiếu Rạp)
  */
-export function getSingleMovies(): Movie[] {
-  return getAllMovies().filter(
-    (m) =>
-      m.type === 'single' ||
-      m.genres.some((g) => g.toLowerCase().includes('lẻ') || g.toLowerCase().includes('chiếu rạp')) ||
-      (m.duration && m.duration.toLowerCase().includes('phút') && !m.episodeInfo?.toLowerCase().includes('tập'))
-  );
-}
+export function getSingleMovies(): Movie[] { return getAllMovies().filter(m => m.type === 'single'); }
 
 /**
  * Get movies by Country (e.g. 'Trung Quốc', 'Hàn Quốc', 'Nhật Bản')

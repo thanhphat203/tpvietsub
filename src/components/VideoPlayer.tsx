@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import Hls from 'hls.js';
+import type Hls from 'hls.js';
 import {
   RotateCcw,
   ChevronLeft,
@@ -48,17 +48,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [watchedList, setWatchedList] = useState<string[]>([]);
   const [isSwitching, setIsSwitching] = useState(false);
   const [useNativePlayer, setUseNativePlayer] = useState(true);
+  const [preferNativeHls, setPreferNativeHls] = useState(true);
   const [showSkipOverlay, setShowSkipOverlay] = useState(false);
   const [autoSkipIntro, setAutoSkipIntro] = useState<boolean>(() => {
     try {
       return localStorage.getItem(AUTO_SKIP_KEY) === 'true';
     } catch {
-      return true; // Default auto-skip to ON for best user experience!
+      return false;
     }
   });
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const failedServers = useRef(new Set<string>());
   const playerContainerRef = useRef<HTMLDivElement>(null);
 
   // Active episode object
@@ -113,7 +115,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Reset selected server when episode changes
   useEffect(() => {
+    failedServers.current.clear();
     setSelectedServerId('');
+    setUseNativePlayer(true);
     setBlockedWarning(false);
   }, [activeEpisode?.tap]);
 
@@ -134,7 +138,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         title: movie.title,
         poster: movie.poster,
         episode: epTap,
-        server: currentServer?.id || 'vip1',
+        server: currentServer?.id?.includes('tm') ? 'tm' : 'vs',
       });
       setWatchedList(getWatchedEpisodes(movie.slug));
     }
@@ -145,7 +149,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (!currentServer) return { activeM3u8: undefined, activeEmbed: undefined };
     return {
       activeM3u8: currentServer.m3u8,
-      activeEmbed: currentServer.url,
+      activeEmbed: /\.m3u8(?:[?#]|$)/i.test(currentServer.url) ? undefined : currentServer.url,
     };
   }, [currentServer]);
 
@@ -160,14 +164,31 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return;
     }
 
-    if (Hls.isSupported()) {
+    const onMetadata = () => {
+      video.play().catch(() => {});
+      if (autoSkipIntro && video.currentTime < 85) video.currentTime = 85;
+    };
+    let disposed = false;
+    const setup = async () => {
+    if (preferNativeHls && video.canPlayType('application/vnd.apple.mpegurl') && (/Apple/.test(navigator.vendor) || /iPhone|iPad|iPod/.test(navigator.userAgent) || !('MediaSource' in window))) {
+      video.src = activeM3u8;
+      video.addEventListener('loadedmetadata', onMetadata);
+    } else {
+      const { default: Hls } = await import('hls.js');
+      if (disposed) return;
+      if (!Hls.isSupported()) { setUseNativePlayer(false); return; }
       if (hlsRef.current) {
         hlsRef.current.destroy();
       }
       const hls = new Hls({
         enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 90,
+        lowLatencyMode: false,
+        capLevelToPlayerSize: true,
+        startLevel: -1,
+        maxBufferLength: 20,
+        maxMaxBufferLength: 40,
+        maxBufferSize: 30 * 1000 * 1000,
+        backBufferLength: 15,
       });
       hlsRef.current = hls;
 
@@ -188,38 +209,32 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (data.fatal) {
           console.warn('HLS stream error:', data.type);
           setBlockedWarning(true);
-          // Try switching to another server if available
-          if (availableServers.length > 1) {
-            const curIdx = availableServers.findIndex((s) => s.id === currentServer?.id);
-            const nextIdx = (curIdx + 1) % availableServers.length;
-            if (nextIdx !== curIdx) {
-              setSelectedServerId(availableServers[nextIdx].id);
-              return;
-            }
+          if (currentServer) failedServers.current.add(currentServer.id);
+          const next = availableServers.find(server => !failedServers.current.has(server.id));
+          if (next) {
+            setSelectedServerId(next.id);
+            setUseNativePlayer(!!next.m3u8);
+            return;
           }
           setUseNativePlayer(false);
         }
       });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native Safari HLS
-      video.src = activeM3u8;
-      video.addEventListener('loadedmetadata', () => {
-        video.play().catch(() => {});
-        if (autoSkipIntro && video.currentTime < 85) {
-          video.currentTime = 85;
-        }
-      });
-    } else {
-      setUseNativePlayer(false);
     }
+    };
+    setup().catch(() => { if (!disposed) setBlockedWarning(true); });
 
     return () => {
+      disposed = true;
+      video.removeEventListener('loadedmetadata', onMetadata);
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
     };
-  }, [activeM3u8, useNativePlayer, activeEpisode?.tap]);
+  }, [activeM3u8, useNativePlayer, activeEpisode?.tap, preferNativeHls]);
 
   // Listen to timeupdate to show/hide the "Skip Intro / Quảng Cáo" overlay button
   const handleTimeUpdate = () => {
@@ -301,7 +316,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Keyboard navigation shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
         return;
       }
       if (e.key === 'n' || e.key === 'N') {
@@ -391,6 +406,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <video
               ref={videoRef}
               controls
+              preload="metadata"
+              tabIndex={0}
+              onEnded={handleNext}
+              onError={() => { if (preferNativeHls) setPreferNativeHls(false); else setBlockedWarning(true); }}
               playsInline
               onTimeUpdate={handleTimeUpdate}
               className="w-full h-full object-contain bg-black"

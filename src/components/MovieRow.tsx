@@ -66,7 +66,7 @@ export const MovieRow: React.FC<MovieRowProps> = ({
         {/* Scroll Left Button */}
         <button
           onClick={() => scroll('left')}
-          className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/80 hover:bg-[#e50914] text-white flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all duration-300 shadow-xl border border-white/10 hidden md:flex"
+          className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/80 hover:bg-[#e50914] text-white flex items-center justify-center opacity-100 transition-all duration-300 shadow-xl border border-white/10 hidden md:flex"
           aria-label="Scroll left"
         >
           <ChevronLeft className="w-6 h-6" />
@@ -75,13 +75,13 @@ export const MovieRow: React.FC<MovieRowProps> = ({
         {/* Scrollable List */}
         <div
           ref={rowRef}
-          className="flex gap-3 sm:gap-4 overflow-x-auto scroll-smooth px-4 sm:px-6 pb-4 pt-1 no-scrollbar scroll-snap-x"
+          className="flex gap-3 sm:gap-4 overflow-x-auto scroll-smooth px-4 sm:px-6 pb-4 pt-1 no-scrollbar movie-strip"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {movies.map((movie) => (
             <div
               key={movie.id}
-              className="w-[140px] sm:w-[170px] md:w-[190px] shrink-0 scroll-snap-align-start"
+              className="w-[140px] sm:w-[170px] md:w-[190px] shrink-0 snap-start"
             >
               <MovieCard movie={movie} />
             </div>
@@ -91,7 +91,7 @@ export const MovieRow: React.FC<MovieRowProps> = ({
         {/* Scroll Right Button */}
         <button
           onClick={() => scroll('right')}
-          className="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/80 hover:bg-[#e50914] text-white flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all duration-300 shadow-xl border border-white/10 hidden md:flex"
+          className="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/80 hover:bg-[#e50914] text-white flex items-center justify-center opacity-100 transition-all duration-300 shadow-xl border border-white/10 hidden md:flex"
           aria-label="Scroll right"
         >
           <ChevronRight className="w-6 h-6" />

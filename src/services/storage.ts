@@ -7,6 +7,8 @@ import { Movie, WatchHistoryItem } from '../types';
 
 const HISTORY_KEY = 'tp_donghua_watch_history_v2';
 const BOOKMARKS_KEY = 'tp_donghua_bookmarks_v2';
+let bookmarkCache: Movie[] | undefined;
+if (typeof window !== 'undefined') window.addEventListener('storage', () => { bookmarkCache = undefined; window.dispatchEvent(new Event('tp_storage_updated')); });
 
 export function getWatchHistory(): WatchHistoryItem[] {
   try {
@@ -48,10 +50,12 @@ export function clearWatchHistory(): void {
 }
 
 export function getBookmarks(): Movie[] {
+  if (bookmarkCache) return bookmarkCache;
   try {
     const raw = localStorage.getItem(BOOKMARKS_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw);
+    const value = raw ? JSON.parse(raw) : [];
+    bookmarkCache = Array.isArray(value) ? value : [];
+    return bookmarkCache;
   } catch (e) {
     console.error('Error reading bookmarks', e);
     return [];
@@ -74,6 +78,7 @@ export function toggleBookmark(movie: Movie): boolean {
       updated = [movie, ...bookmarks];
     }
     localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(updated));
+    bookmarkCache = updated;
     window.dispatchEvent(new Event('tp_storage_updated'));
     return !exists;
   } catch (e) {

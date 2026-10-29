@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { positivePage } from '../services/catalog';
 import { searchMoviesApi } from '../services/api';
 import { MovieCard } from '../components/MovieCard';
 import { GenreTag } from '../components/GenreTag';
@@ -14,7 +15,7 @@ import { Search, Film, X, Layers, ChevronLeft, ChevronRight, Loader2 } from 'luc
 export const SearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = searchParams.get('q') || '';
-  const pageParam = parseInt(searchParams.get('page') || '1', 10);
+  const pageParam = positivePage(searchParams.get('page'));
 
   const [query, setQuery] = useState(queryParam);
   const [page, setPage] = useState(pageParam);
@@ -30,9 +31,10 @@ export const SearchPage: React.FC = () => {
   // Execute Search via API
   useEffect(() => {
     let isMounted = true;
-    if (query.trim()) {
+    if (queryParam.trim()) {
       setLoading(true);
-      searchMoviesApi(query.trim(), page)
+      setResults([]);
+      searchMoviesApi(queryParam.trim(), pageParam)
         .then((data) => {
           if (isMounted) {
             setResults(data);
@@ -51,7 +53,7 @@ export const SearchPage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [query, page]);
+  }, [queryParam, pageParam]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

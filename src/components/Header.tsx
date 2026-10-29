@@ -13,9 +13,11 @@ import {
   Star,
   History,
 } from 'lucide-react';
-import { ALL_GENRES, Movie } from '../types';
+import { Movie } from '../types';
 import { searchMoviesApi, getHdImageUrl } from '../services/api';
 import { searchMovies } from '../../lib/movies';
+
+import { genres } from '../services/catalog';
 
 export const Header: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,6 +33,14 @@ export const Header: React.FC = () => {
   const genreRef = useRef<HTMLDivElement>(null);
   const countryRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setIsGenreOpen(false); setIsCountryOpen(false); setIsMobileMenuOpen(false); setIsSearchOpen(false); }
+    };
+    document.addEventListener('keydown', escape);
+    return () => document.removeEventListener('keydown', escape);
+  }, []);
+
   // Close menus on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -41,7 +51,8 @@ export const Header: React.FC = () => {
 
   // Live search debounced
   useEffect(() => {
-    if (searchQuery.trim().length >= 1) {
+    let active = true;
+    if (searchQuery.trim().length >= 2) {
       const timer = setTimeout(() => {
         // Fast local search first (0ms)
         const localMatches = searchMovies(searchQuery).slice(0, 5);
@@ -52,6 +63,7 @@ export const Header: React.FC = () => {
           // Fallback to API search
           searchMoviesApi(searchQuery, 1)
             .then((apiMatches) => {
+              if (!active) return;
               setSearchResults(apiMatches.slice(0, 5));
               setIsSearchOpen(true);
             })
@@ -59,7 +71,7 @@ export const Header: React.FC = () => {
         }
       }, 200);
 
-      return () => clearTimeout(timer);
+      return () => { active = false; clearTimeout(timer); };
     } else {
       setSearchResults([]);
       setIsSearchOpen(false);
@@ -141,7 +153,7 @@ export const Header: React.FC = () => {
 
               {isGenreOpen && (
                 <div className="absolute top-full left-0 mt-2 w-80 bg-[#14141e] rounded-2xl shadow-2xl border border-[#262638] p-3.5 grid grid-cols-2 gap-1.5 z-50">
-                  {ALL_GENRES.map((genre) => (
+                  {Object.keys(genres).map((genre) => (
                     <Link
                       key={genre}
                       to={`/the-loai/${encodeURIComponent(genre)}`}
@@ -375,7 +387,7 @@ export const Header: React.FC = () => {
               Thể loại nổi bật:
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {ALL_GENRES.slice(0, 10).map((g) => (
+              {Object.keys(genres).slice(0, 10).map((g) => (
                 <Link
                   key={g}
                   to={`/the-loai/${encodeURIComponent(g)}`}
@@ -391,3 +403,4 @@ export const Header: React.FC = () => {
     </header>
   );
 };
+

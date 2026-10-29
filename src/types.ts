@@ -74,7 +74,7 @@ export interface Movie {
   type?: 'series' | 'single'; // Phim bộ vs Phim lẻ
   airSchedule?: string;   // e.g. "T2", "T3", "CN", "T4,CN"
   tmdbId?: string;
-  source?: 'all' | 'anisrc' | 'kkphim'; // API source identifier
+  source?: 'all' | 'anisrc' | 'kkphim' | 'nguonc' | 'phim4k'; // API source identifier
   watchLinks: WatchLink[];
   episodes?: Episode[];
   parts?: MoviePart[];    // Multi-part support
@@ -146,5 +146,5 @@ export interface FilterOptions {
   schedule: string;
   sortBy: 'updated' | 'year_desc' | 'rating' | 'views' | 'title';
   page: number;
-  source?: 'all' | 'anisrc' | 'kkphim';
+  source?: 'all' | 'anisrc' | 'kkphim' | 'nguonc' | 'phim4k';
 }

@@ -20,9 +20,10 @@ export const MovieCard = React.memo<MovieCardProps>(({ movie }) => {
   const [imgLoaded, setImgLoaded] = useState(false);
 
   useEffect(() => {
-    if (movie.slug) {
-      setBookmarked(isBookmarked(movie.slug));
-    }
+    const syncBookmark = () => setBookmarked(isBookmarked(movie.slug));
+    syncBookmark();
+    window.addEventListener('tp_storage_updated', syncBookmark);
+    return () => window.removeEventListener('tp_storage_updated', syncBookmark);
   }, [movie.slug]);
 
   const handleBookmarkClick = (e: React.MouseEvent) => {
@@ -52,6 +53,7 @@ export const MovieCard = React.memo<MovieCardProps>(({ movie }) => {
           src={getHdImageUrl(movie.poster)}
           alt={movie.title}
           loading="lazy"
+          width={300} height={450}
           decoding="async"
           onLoad={() => setImgLoaded(true)}
           className={`w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-108 ${
@@ -59,6 +61,7 @@ export const MovieCard = React.memo<MovieCardProps>(({ movie }) => {
           }`}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
+            target.onerror = null;
             target.src =
               'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop&q=80';
             setImgLoaded(true);
@@ -90,18 +93,7 @@ export const MovieCard = React.memo<MovieCardProps>(({ movie }) => {
           </div>
 
           {/* 3D Bookmark Button */}
-          <button
-            type="button"
-            onClick={handleBookmarkClick}
-            className={`p-1.5 rounded-xl pointer-events-auto backdrop-blur-md transition-all duration-200 btn-3d ${
-              bookmarked
-                ? 'bg-red-600 text-white shadow-lg shadow-red-950 scale-105'
-                : 'bg-black/60 text-gray-300 hover:text-white hover:bg-black/90 border border-white/10'
-            }`}
-            title={bookmarked ? 'Bỏ lưu yêu thích' : 'Lưu vào tủ phim'}
-          >
-            <Bookmark className={`w-3.5 h-3.5 ${bookmarked ? 'fill-current' : ''}`} />
-          </button>
+
         </div>
 
         {/* Bottom Status & Rating Badges */}
@@ -112,7 +104,7 @@ export const MovieCard = React.memo<MovieCardProps>(({ movie }) => {
 
           <span className="bg-black/85 backdrop-blur-md text-gray-200 font-extrabold text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-white/10 shadow-lg">
             <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-            {movie.rating.toFixed(1)}
+            {movie.rating > 0 ? movie.rating.toFixed(1) : '—'}
           </span>
         </div>
 
@@ -123,12 +115,26 @@ export const MovieCard = React.memo<MovieCardProps>(({ movie }) => {
           </div>
         </div>
       </Link>
+          <button
+            type="button"
+            onClick={handleBookmarkClick}
+            className={`absolute top-2 right-2 z-30 p-2.5 rounded-xl pointer-events-auto backdrop-blur-md transition-all duration-200 btn-3d ${
+              bookmarked
+                ? 'bg-red-600 text-white shadow-lg shadow-red-950 scale-105'
+                : 'bg-black/60 text-gray-300 hover:text-white hover:bg-black/90 border border-white/10'
+            }`}
+            aria-label={bookmarked ? `Bỏ lưu ${movie.title}` : `Lưu ${movie.title}`}
+            title={bookmarked ? 'Bỏ lưu yêu thích' : 'Lưu vào tủ phim'}
+          >
+            <Bookmark className={`w-3.5 h-3.5 ${bookmarked ? 'fill-current' : ''}`} />
+          </button>
 
       {/* Structured Info Box with Fixed Heights to Eliminate Any Layout Shifts */}
       <div className="p-3 flex flex-col justify-between flex-grow bg-[#14141f] border-t border-[#222234]">
         <div className="space-y-0.5">
           <Link
             to={`/phim/${movie.slug}`}
+            tabIndex={-1}
             className="block font-black text-xs sm:text-sm text-gray-100 group-hover:text-red-400 line-clamp-1 transition-colors duration-200 h-5"
             title={movie.title}
           >
@@ -139,13 +145,13 @@ export const MovieCard = React.memo<MovieCardProps>(({ movie }) => {
             className="text-[10px] text-gray-400 font-light italic line-clamp-1 h-4"
             title={movie.titleOriginal || ''}
           >
-            {movie.titleOriginal || 'Hoạt hình Trung Quốc'}
+            {movie.titleOriginal || movie.country || ''}
           </p>
         </div>
 
         <div className="flex items-center justify-between text-[10px] text-gray-400 pt-2 mt-1.5 border-t border-[#222234] h-6">
           <span className="truncate text-gray-400 font-medium max-w-[65%]">
-            {movie.genres[0] || 'Donghua'}
+            {movie.genres[0] || 'Đang cập nhật'}
           </span>
           <span className="text-[9px] text-emerald-400 font-bold bg-emerald-950/40 border border-emerald-900/50 px-1.5 py-0.2 rounded font-mono shrink-0">
             {movie.year || '2024'}
