@@ -1,6 +1,6 @@
 /**
  * @file src/components/VideoPlayer.tsx
- * Cinema-Grade Ad-Free Video Player with HLS.js Support, Auto-Skip Intro Ads, and Clean Minimalist UI
+ * HLS/embedded player with explicit source errors and bounded startup timeout
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   FastForward,
 } from 'lucide-react';
+import { episodeServers, sourceIssue, mediaUrl } from '../services/playback';
 import { Episode, Movie } from '../types';
 import { saveWatchProgress, markEpisodeWatched, getWatchedEpisodes } from '../services/storage';
 
@@ -42,7 +43,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   isLoadingEpisodes = false,
 }) => {
   const [selectedServerId, setSelectedServerId] = useState<string>('');
-  const [blockedWarning, setBlockedWarning] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [retry, setRetry] = useState(0);
+  const [playbackState, setPlaybackState] = useState('Sẵn sàng');
   const [searchEp, setSearchEp] = useState('');
   const [activeChunk, setActiveChunk] = useState(0);
   const [watchedList, setWatchedList] = useState<string[]>([]);
@@ -60,7 +63,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const failedServers = useRef(new Set<string>());
   const playerContainerRef = useRef<HTMLDivElement>(null);
 
   // Active episode object
@@ -73,53 +75,24 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return episodes[0];
   }, [episodes, currentTap]);
 
-  // Compute available servers for current activeEpisode
-  const availableServers = useMemo(() => {
-    if (!activeEpisode) return [];
-    if (activeEpisode.servers && activeEpisode.servers.length > 0) {
-      return activeEpisode.servers;
-    }
-    const defServers = [];
-    if (activeEpisode.vs || activeEpisode.m3u8 || activeEpisode.link_embed) {
-      defServers.push({
-        id: 'server_vs',
-        name: 'Server VIP 1',
-        url: activeEpisode.vs || activeEpisode.m3u8 || activeEpisode.link_embed || '',
-        m3u8: activeEpisode.m3u8,
-        isEmbed: !activeEpisode.m3u8,
-      });
-    }
-    if (activeEpisode.tm || activeEpisode.m3u8_tm) {
-      defServers.push({
-        id: 'server_tm',
-        name: 'Server Thuyết Minh',
-        url: activeEpisode.tm || activeEpisode.m3u8_tm || '',
-        m3u8: activeEpisode.m3u8_tm,
-        isEmbed: !activeEpisode.m3u8_tm,
-      });
-    }
-    return defServers;
-  }, [activeEpisode]);
-
-  // Active selected server
+  const availableServers = useMemo(() => episodeServers(activeEpisode), [activeEpisode]);
   const currentServer = useMemo(() => {
-    if (availableServers.length === 0) return null;
-    if (selectedServerId) {
-      const found = availableServers.find((s) => s.id === selectedServerId);
-      if (found) return found;
-    }
-    // Prefer safe server (not containing kkphimplayer)
-    const safe = availableServers.find((s) => !s.url.includes('kkphimplayer'));
-    return safe || availableServers[0];
+    const selected = availableServers.find(s => s.id === selectedServerId && !sourceIssue(s));
+    return selected || availableServers.find(s => !sourceIssue(s)) || null;
   }, [availableServers, selectedServerId]);
 
-  // Reset selected server when episode changes
   useEffect(() => {
-    failedServers.current.clear();
     setSelectedServerId('');
     setUseNativePlayer(true);
-    setBlockedWarning(false);
-  }, [activeEpisode?.tap]);
+    setErrorMessage('');
+    setPlaybackState('Sẵn sàng');
+  }, [movie.slug, activeEpisode?.tap]);
+
+  const chooseServer = (id: string) => {
+    setSelectedServerId(id); setErrorMessage(''); setUseNativePlayer(true);
+    setPlaybackState('Đang kết nối'); setRetry(n => n + 1);
+  };
+  const fail = (message: string) => { setErrorMessage(message); setPlaybackState('Không phát được'); };
 
   // Sync watched list
   useEffect(() => {
@@ -148,15 +121,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const { activeM3u8, activeEmbed } = useMemo(() => {
     if (!currentServer) return { activeM3u8: undefined, activeEmbed: undefined };
     return {
-      activeM3u8: currentServer.m3u8,
-      activeEmbed: /\.m3u8(?:[?#]|$)/i.test(currentServer.url) ? undefined : currentServer.url,
+      activeM3u8: mediaUrl(currentServer.m3u8),
+      activeEmbed: /\.m3u8(?:[?#]|$)/i.test(currentServer.url) ? undefined : mediaUrl(currentServer.url),
     };
   }, [currentServer]);
 
   // Setup Hls.js on native <video> when m3u8 is available
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !activeM3u8 || !useNativePlayer) {
+    if (!video || !activeM3u8 || !useNativePlayer || isLoadingEpisodes || errorMessage) {
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
@@ -164,6 +137,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return;
     }
 
+    setPlaybackState('Đang kết nối');
+    let startupTimer = window.setTimeout(() => fail('Nguồn video không phản hồi. Hãy thử lại hoặc chọn nguồn khác đang hoạt động.'), 15000);
+    const clearStartup = () => window.clearTimeout(startupTimer);
+    video.addEventListener('loadedmetadata', clearStartup);
     const onMetadata = () => {
       video.play().catch(() => {});
       if (autoSkipIntro && video.currentTime < 85) video.currentTime = 85;
@@ -176,7 +153,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } else {
       const { default: Hls } = await import('hls.js');
       if (disposed) return;
-      if (!Hls.isSupported()) { setUseNativePlayer(false); return; }
+      if (!Hls.isSupported()) { fail('Trình duyệt này không hỗ trợ phát HLS trực tiếp. Có thể chọn trình phát nhúng nếu nguồn cung cấp.'); return; }
       if (hlsRef.current) {
         hlsRef.current.destroy();
       }
@@ -207,24 +184,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
-          console.warn('HLS stream error:', data.type);
-          setBlockedWarning(true);
-          if (currentServer) failedServers.current.add(currentServer.id);
-          const next = availableServers.find(server => !failedServers.current.has(server.id));
-          if (next) {
-            setSelectedServerId(next.id);
-            setUseNativePlayer(!!next.m3u8);
-            return;
-          }
-          setUseNativePlayer(false);
+          fail('Không tải được video. Nguồn có thể lỗi mạng, TLS, CORS hoặc bị phần mềm bảo vệ chặn.');
         }
       });
     }
     };
-    setup().catch(() => { if (!disposed) setBlockedWarning(true); });
+    setup().catch(() => { if (!disposed) fail('Không khởi tạo được trình phát. Vui lòng thử lại.'); });
 
     return () => {
       disposed = true;
+      clearStartup();
+      video.removeEventListener('loadedmetadata', clearStartup);
       video.removeEventListener('loadedmetadata', onMetadata);
       video.pause();
       video.removeAttribute('src');
@@ -234,7 +204,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         hlsRef.current = null;
       }
     };
-  }, [activeM3u8, useNativePlayer, activeEpisode?.tap, preferNativeHls]);
+  }, [activeM3u8, useNativePlayer, activeEpisode?.tap, preferNativeHls, retry, isLoadingEpisodes, errorMessage]);
 
   // Listen to timeupdate to show/hide the "Skip Intro / Quảng Cáo" overlay button
   const handleTimeUpdate = () => {
@@ -339,7 +309,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
           <div>
             <div className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider">
-              ĐANG PHÁT TRỰC TUYẾN
+              {errorMessage ? 'Không phát được' : playbackState}
             </div>
             <div className="text-sm sm:text-base font-black text-white flex items-center gap-2">
               <span className="text-[#e50914] drop-shadow-[0_0_8px_rgba(229,9,20,0.5)]">
@@ -366,7 +336,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             title="Tự động tua qua đoạn quảng cáo/giới thiệu đầu video (85s)"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Tự Bỏ Qua QC: {autoSkipIntro ? 'BẬT' : 'TẮT'}</span>
+            <span>Tự bỏ intro: {autoSkipIntro ? 'BẬT' : 'TẮT'}</span>
           </button>
 
           {/* Cinema Mode Toggle */}
@@ -395,6 +365,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               Đang kết nối luồng phát video...
             </p>
           </div>
+        ) : errorMessage ? (
+          <div role="alert" className="w-full h-full flex flex-col items-center justify-center p-6 gap-4 text-center">
+            <p className="text-amber-200">{errorMessage}</p>
+            <p className="text-gray-400 text-xs">Nguồn: {currentServer ? new URL(currentServer.m3u8 || currentServer.url).hostname : 'Chưa có nguồn khả dụng'}</p>
+            <div className="flex gap-3 flex-wrap justify-center">
+              <button className="catalog-button" onClick={() => { setErrorMessage(''); setRetry(n => n + 1); }}>Thử lại nguồn này</button>
+              {activeEmbed && <button className="catalog-button" onClick={() => { setErrorMessage(''); setUseNativePlayer(false); }}>Dùng trình phát nhúng</button>}
+            </div>
+          </div>
         ) : activeM3u8 && useNativePlayer ? (
           // 1. Native Ad-Free HTML5 Video Player with Hls.js (Zero Popup / Zero Gambling Ads!)
           <div className="relative w-full h-full bg-black">
@@ -409,7 +388,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               preload="metadata"
               tabIndex={0}
               onEnded={handleNext}
-              onError={() => { if (preferNativeHls) setPreferNativeHls(false); else setBlockedWarning(true); }}
+              onPlaying={() => setPlaybackState('Đang phát')}
+              onPause={() => setPlaybackState('Tạm dừng')}
+              onError={() => { if (!hlsRef.current && preferNativeHls) setPreferNativeHls(false); else fail('Không giải mã được video hoặc không kết nối được nguồn. Hãy chọn nguồn khác.'); }}
               playsInline
               onTimeUpdate={handleTimeUpdate}
               className="w-full h-full object-contain bg-black"
@@ -424,7 +405,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   className="px-4 py-2 rounded-xl bg-black/85 hover:bg-[#e50914] text-white text-xs font-black backdrop-blur-md border border-white/20 hover:border-red-500 shadow-2xl transition-all flex items-center gap-1.5 btn-3d"
                 >
                   <FastForward className="w-4 h-4" />
-                  Bỏ qua quảng cáo / Intro (+85s)
+                  Bỏ qua intro (85s)
                 </button>
               </div>
             )}
@@ -438,10 +419,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               </div>
             )}
             <iframe
+              key={`${currentServer?.id}-${retry}`}
               src={activeEmbed}
               title={`${movie.title} - Tập ${activeEpisode?.tap}`}
               sandbox="allow-scripts allow-same-origin allow-presentation"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              onLoad={() => setPlaybackState('Trình phát nhúng')}
               allowFullScreen
               className="w-full h-full border-0 absolute inset-0"
             />
@@ -449,37 +432,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-black/95 p-6 text-center space-y-3">
             <p className="text-gray-300 font-bold text-sm">
-              Server này hiện chưa có nguồn cho tập này. Vui lòng chuyển sang Server khác.
+              {availableServers.some(server => sourceIssue(server)) ? 'Nguồn video hiện bị tạm ngưng hoặc không hợp lệ. Cần nhà cung cấp cập nhật nguồn khác.' : 'API chưa cung cấp nguồn phát hợp lệ cho tập này.'}
             </p>
           </div>
         )}
       </div>
 
-      {/* Antivirus & Network Advisory Notification */}
-      <div className="bg-[#181825] border border-amber-500/30 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-md">
-        <div className="flex items-center gap-2.5 text-amber-200">
-          <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
-          <p className="leading-relaxed">
-            <strong className="text-amber-300">Mẹo tránh bị chặn:</strong> Nếu trình duyệt hoặc phần mềm diệt virus (Avast, AVG, Malwarebytes) báo chặn đường truyền, bạn chỉ cần bấm chọn <strong>Server khác</strong> (Server VIP 1 / VIP 2 / VIP 3) ở thanh máy chủ bên dưới để xem mượt mà 100%!
-          </p>
-        </div>
-        {availableServers.length > 1 && (
-          <button
-            type="button"
-            onClick={() => {
-              const curIdx = availableServers.findIndex((s) => s.id === currentServer?.id);
-              const nextIdx = (curIdx + 1) % availableServers.length;
-              setIsSwitching(true);
-              setSelectedServerId(availableServers[nextIdx].id);
-              setUseNativePlayer(!!availableServers[nextIdx].m3u8);
-              setBlockedWarning(false);
-              setTimeout(() => setIsSwitching(false), 200);
-            }}
-            className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs shrink-0 transition-colors btn-3d shadow-lg"
-          >
-            Đổi Server Nhanh
-          </button>
-        )}
+      <div className="bg-[#181825] border border-amber-500/30 rounded-2xl p-4 text-sm text-amber-200" role="note">
+        <p>Nếu phần mềm bảo vệ cảnh báo tên miền video, hãy giữ bảo vệ bật. Website không thể xác nhận nguồn an toàn hay gỡ cảnh báo của Avast.</p>
+        {availableServers.filter(server => sourceIssue(server)).map(server => <p key={server.id} className="mt-2">{server.name}: {sourceIssue(server)}</p>)}
       </div>
 
       {/* Control Bar: Server Switch, Skip Controls & Next/Prev */}
@@ -496,15 +457,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <button
                 key={srv.id}
                 type="button"
-                onClick={() => {
-                  if (currentServer?.id !== srv.id) {
-                    setIsSwitching(true);
-                    setSelectedServerId(srv.id);
-                    setUseNativePlayer(!!srv.m3u8);
-                    setBlockedWarning(false);
-                    setTimeout(() => setIsSwitching(false), 200);
-                  }
-                }}
+                disabled={!!sourceIssue(srv)}
+                title={sourceIssue(srv) || srv.name}
+                aria-pressed={isActive}
+                onClick={() => chooseServer(srv.id)}
                 className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border btn-3d ${
                   isActive
                     ? idx === 0
@@ -516,7 +472,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-gray-500'}`} />
-                {srv.name} {srv.m3u8 ? '(HLS)' : ''}
+                {srv.name} {sourceIssue(srv) ? '(Tạm ngưng)' : srv.m3u8 ? '(HLS)' : '(Nhúng)'}
               </button>
             );
           })}
@@ -578,6 +534,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </div>
       </div>
 
+      {activeM3u8 && activeEmbed && !errorMessage && <div className="flex flex-wrap gap-3">
+        <button className="catalog-button" aria-pressed={useNativePlayer} onClick={() => { setUseNativePlayer(true); setRetry(n => n + 1); }}>Phát HLS trực tiếp</button>
+        <button className="catalog-button" aria-pressed={!useNativePlayer} onClick={() => setUseNativePlayer(false)}>Dùng trình phát nhúng</button>
+      </div>}
       {/* Episode Navigation Section */}
       <div className="bg-[#13131d] rounded-2xl p-4 sm:p-5 border border-[#232336] space-y-4 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#20202e] pb-3">

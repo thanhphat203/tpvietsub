@@ -25,7 +25,7 @@ npm start
 ## Đưa lên hosting
 
 - Vercel / Netlify: build `npm run build`, output `dist`. Cấu hình SPA rewrite đã có trong dự án.
-- GitHub Pages: workflow có sẵn; dùng HashRouter tự động trên hostname github.io. Khi cấu hình tên miền riêng, cần hosting hỗ trợ SPA fallback.
+- GitHub Pages: workflow tự đặt VITE_BASE_PATH theo tên repository; dùng HashRouter tự động trên hostname github.io. Khi cấu hình tên miền riêng, cần hosting hỗ trợ SPA fallback.
 - Hosting tĩnh khác: đưa NỘI DUNG `dist/` lên thư mục web và rewrite các đường dẫn ứng dụng về index.html. Không rewrite file assets bị thiếu thành HTML.
 - Node/VPS: `npm ci`, `npm run build`, `npm start`; đặt HTTPS/reverse proxy theo hosting của bạn.
 - Mặc định trình duyệt gọi phimapi.com trực tiếp. Nếu cần proxy cùng miền trên Node/VPS, tạo `.env.local` với `VITE_API_PROXY=true`, chạy lại build và dùng `npm start`. Hosting tĩnh không có Express thì giữ giá trị mặc định.
@@ -56,3 +56,16 @@ Nguồn và số phim có thể thay đổi. Khi kiểm tra ngày 29/10/2026, ng
 Trang phim và trình phát mở được trong kiểm tra. CDN của luồng Avatar thử nghiệm báo lỗi SSL tại môi trường chạy kiểm tra; chưa xác nhận xem xuyên suốt. Cần kiểm tra thêm bằng nguồn video đang hoạt động trên thiết bị triển khai. Không tắt xác minh TLS để che lỗi nguồn.
 
 Xem `BAO_CAO_TOI_UU.md` để biết thay đổi và các kiểm tra đã chạy.
+
+
+## Bản sửa trình phát v2
+
+- Giữ từng server Vietsub/Thuyết minh và link nhúng thật từ API; không ghi đè thành các nút VIP giả.
+- HLS lỗi không bị diễn giải thành thiếu nguồn. Có thông báo lỗi, timeout 15 giây khi chưa nhận metadata, nút thử lại và lựa chọn nhúng khi API có cung cấp.
+- Không tự mở iframe khi HLS lỗi. Người xem chủ động chọn chế độ nhúng; iframe không đồng nghĩa với nguồn an toàn.
+- Tạm ngưng domain phim1280.tv và các subdomain vì người dùng cung cấp cảnh báo Avast. Không proxy/chuyển tên miền để che nguồn bị cảnh báo; không yêu cầu tắt antivirus.
+- Cache tập dùng namespace v2 để bỏ cấu trúc server cũ bị mất link dự phòng.
+- Mặc định build base=/ cho Node/Vercel/Netlify. GitHub Actions tự dùng /tên-repository/. Với repo trong ảnh, base là /tpvietsub/.
+- Build GitHub thủ công bằng PowerShell: `$env:VITE_BASE_PATH='/tpvietsub/'; npm run build`. Trên macOS/Linux: `VITE_BASE_PATH=/tpvietsub/ npm run build`.
+
+API của Avatar: Dòng Chảy Của Nước trả cả hai bản từ s5.phim1280.tv tại lúc kiểm tra. Bản v2 sẽ báo nguồn tạm ngưng, không hứa phát được phim đó. Chủ nguồn cần xử lý cảnh báo với nhà cung cấp bảo mật hoặc cung cấp một nguồn thay thế đã được xác minh.

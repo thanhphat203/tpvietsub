@@ -4,6 +4,7 @@
  * Ultra-fast Stale-While-Revalidate caching, direct m3u8 stream resolution, and zero-ad support.
  */
 
+import { parseKKPhimEpisodes, episodeServers } from './playback';
 import { Movie, Episode, AnisrcRawMovie } from '../types';
 import startupRaw from '../../data/startup_raw.json';
 const unifiedMoviesSeed = startupRaw.map(transformKKPhimMovie);
@@ -829,37 +830,7 @@ function parseEpisodesFromBlogspot(html: string): Episode[] {
 /**
  * Parse episodes from KKPhim API response
  */
-function parseEpisodesFromKKPhim(data: any): Episode[] {
-  const episodesMap = new Map<string, Episode>();
-
-  if (data.episodes && Array.isArray(data.episodes)) {
-    for (const server of data.episodes) {
-      const sName = (server.server_name || '').toLowerCase();
-      const isTm = sName.includes('thuyết minh') || sName.includes('thuyet minh');
-
-      for (const ep of server.server_data || []) {
-        const rawName = ep.name || ep.slug || '';
-        const numMatch = rawName.match(/\d+/);
-        const tap = numMatch ? String(parseInt(numMatch[0], 10)) : rawName.trim();
-
-        const existing: Episode = episodesMap.get(tap) || { tap };
-        if (isTm) {
-          existing.tm = ep.link_m3u8 || ep.link_embed;
-          existing.m3u8_tm = ep.link_m3u8;
-        } else {
-          existing.vs = ep.link_m3u8 || ep.link_embed;
-          existing.m3u8 = ep.link_m3u8;
-        }
-        existing.link_embed = existing.link_embed || ep.link_embed;
-        episodesMap.set(tap, existing);
-      }
-    }
-  }
-
-  return Array.from(episodesMap.values()).sort(
-    (a, b) => (parseInt(a.tap, 10) || 0) - (parseInt(b.tap, 10) || 0)
-  );
-}
+const parseEpisodesFromKKPhim = parseKKPhimEpisodes;
 
 /**
  * Parse episodes from NguonC API response
@@ -942,7 +913,7 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
 
   // 2. Check LocalStorage cache (0ms instant!)
   try {
-    const localRaw = localStorage.getItem(`tp_eps_${cleanSlug}`);
+    const localRaw = localStorage.getItem(`tp_eps_v2_${cleanSlug}`);
     if (localRaw) {
       const entry = JSON.parse(localRaw);
       const parsed = entry.episodes;
@@ -1045,11 +1016,13 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
           };
           const currentServers = existing.servers ? [...existing.servers] : [];
 
-          if (listObj.provider === 'NguonC') {
+          if (ep.servers?.length) {
+            currentServers.push(...ep.servers);
+          } else if (listObj.provider === 'NguonC') {
             if (ep.vs || ep.link_embed) {
               currentServers.push({
                 id: 'server_nguonc',
-                name: 'Server VIP 1 (Không Chặn)',
+                name: 'NguonC',
                 url: ep.vs || ep.link_embed || '',
                 m3u8: ep.m3u8,
                 isEmbed: !ep.m3u8,
@@ -1060,7 +1033,7 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
               const isBlacklisted = (ep.m3u8 || ep.vs || '').includes('kkphimplayer');
               currentServers.push({
                 id: 'server_kkphim',
-                name: isBlacklisted ? 'Server VIP 2 (HLS)' : 'Server VIP 2 (HLS Siêu Nét)',
+                name: isBlacklisted ? 'KKPhim' : 'KKPhim',
                 url: ep.vs || ep.m3u8 || '',
                 m3u8: ep.m3u8,
                 isEmbed: false,
@@ -1105,13 +1078,8 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
             }
           }
 
-          // Deduplicate servers by id
-          const uniqueServers = currentServers.filter(
-            (s, idx, self) => idx === self.findIndex((t) => t.id === s.id)
-          );
-
-          // Pick safest default stream (preferring non-kkphimplayer URL if possible)
-          const safeServer = uniqueServers.find((s) => !s.url.includes('kkphimplayer')) || uniqueServers[0];
+          const uniqueServers = episodeServers({ tap: ep.tap, servers: currentServers });
+          const safeServer = uniqueServers[0];
           if (safeServer) {
             existing.vs = safeServer.url;
             existing.m3u8 = safeServer.m3u8;
@@ -1137,7 +1105,7 @@ export async function fetchMovieEpisodes(slug: string): Promise<Episode[]> {
       if (mergedEpisodes.length > 0) {
         memoryCache.set(memoryKey, { data: mergedEpisodes, timestamp: Date.now() });
         try {
-          localStorage.setItem(`tp_eps_${cleanSlug}`, JSON.stringify({ episodes: mergedEpisodes, timestamp: Date.now() }));
+          localStorage.setItem(`tp_eps_v2_${cleanSlug}`, JSON.stringify({ episodes: mergedEpisodes, timestamp: Date.now() }));
         } catch {
           // ignore
         }
